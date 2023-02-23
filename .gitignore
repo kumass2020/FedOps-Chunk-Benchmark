@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Customized
+.idea/
+.pylintrc
+.vscode/settings.json
+cifar-10-python.tar.gz
+cifar-10-batches-py/
