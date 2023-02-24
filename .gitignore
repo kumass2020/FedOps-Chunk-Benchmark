@@ -134,3 +134,4 @@ dmypy.json
 .vscode/settings.json
 cifar-10-python.tar.gz
 cifar-10-batches-py/
+.DS_Store
