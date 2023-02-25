@@ -105,7 +105,16 @@ celerybeat.pid
 .env
 .venv
 env/
+
 venv/
+venv/*
+!venv/lib/
+venv/lib/*
+venv/lib/python3.9/*
+!venv/lib/python3.9/site-packages/
+venv/lib/python3.9/site-packages/*
+!venv/lib/python3.9/site-packages/flwr/
+
 ENV/
 env.bak/
 venv.bak/
