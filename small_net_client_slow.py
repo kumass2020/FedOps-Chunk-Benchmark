@@ -10,6 +10,8 @@ from torchvision.datasets import CIFAR10
 from torchvision.transforms import Compose, Normalize, ToTensor
 from tqdm import tqdm
 
+import time
+
 
 # #############################################################################
 # 1. Regular PyTorch pipeline: nn.Module, train, test, and DataLoader
@@ -90,6 +92,7 @@ def train(net, trainloader, epochs):
             optimizer.zero_grad()
             criterion(net(images.to(DEVICE)), labels.to(DEVICE)).backward()
             optimizer.step()
+            time.sleep(0.01)
 
 
 def test(net, testloader):
