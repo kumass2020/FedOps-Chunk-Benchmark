@@ -1,75 +1,43 @@
 from kubernetes import client, config
 import time
 
-JOB_NAME = "fedops-server-mjh"
+JOB_NAME = "fedops-client-mjh"
 service_account_name = "fedops-svc-mjh"
+
 
 def create_containers():
     container_list = []
     cpu = 0
     memory = 0
 
-    for i in range(10):
+    for i in range(3):
         container = client.V1Container(
-            name="fedops-server",
-            image="kumass2020/fedops-server",
+            name=f"fedops-client-{i}",
+            image="kumass2020/fedops-client",
             # command=["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
             resources=client.V1ResourceRequirements(
-                requests={"cpu": "500m", "memory": "512Mi"},
-                limits={"cpu": "1000m", "memory": "1Gi"}
+                requests={"cpu": "2000m", "memory": "2Gi"},
+                limits={"cpu": "8000m", "memory": "8Gi"}
             )
         )
         container_list.append(container)
 
+    return container_list
+
 
 def create_job_object():
     # Configureate Pod template container
-    container = client.V1Container(
-        name="fedops-server",
-        image="kumass2020/fedops-server",
-        # command=["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
-        resources=client.V1ResourceRequirements(
-            requests={"cpu": "500m", "memory": "512Mi"},
-            limits={"cpu": "1000m", "memory": "1Gi"}
-        )
-    )
-    # Create and configure a spec section
-    # template = client.V1PodTemplateSpec(
-    #     metadata=client.V1ObjectMeta(labels={"app": "fedops-mjh"}),
-    #     spec=client.V1PodSpec(restart_policy="Never", containers=[container]))
+    container_list = create_containers()
 
-    # Create Service
-    service_spec = client.V1ServiceSpec(
-        type="LoadBalancer",
-        selector={"app": "fedops-mjh"},
-        ports=[client.V1ServicePort(port=80, target_port=80)]
-    )
-    service_meta = client.V1ObjectMeta(name="fedops-service")
-    service = client.V1Service(api_version="v1", kind="Service", metadata=service_meta, spec=service_spec)
+    # Create and configure a spec section
     template = client.V1PodTemplateSpec(
-        metadata=client.V1ObjectMeta(labels={"app": "fedops-mjh"}),
-        spec=client.V1PodSpec(
-            restart_policy="Never",
-            containers=[container],
-            service_account_name=service_account_name
-        )
-    )
+        metadata=client.V1ObjectMeta(labels={"app": "fedops-client-mjh"}),
+        spec=client.V1PodSpec(restart_policy="Never", containers=container_list))
 
     # Create the specification of deployment
     spec = client.V1JobSpec(
         template=template,
         backoff_limit=4)
-
-    # applied with service
-    spec.template.metadata.annotations = {"prometheus.io/scrape": "true", "prometheus.io/path": "/metrics"}
-    spec.template.metadata.labels = {"app": "fedops-mjh"}
-    spec.template.spec.containers[0].ports = [
-        client.V1ContainerPort(container_port=8080)
-    ]
-    spec.template.spec.restart_policy = "Never"
-    spec.template.spec.service_account_name = service_account_name
-    spec.template.spec.service_account = service_account_name
-    spec.template.spec.service = service
 
     # Instantiate the job object
     job = client.V1Job(
@@ -128,6 +96,7 @@ def main():
     # default location.
     config.load_kube_config('config_ssh.txt')
     batch_v1 = client.BatchV1Api()
+
     # Create a job object with client-python API. The job we
     # created is same as the `pi-job.yaml` in the /examples folder.
     job = create_job_object()
@@ -136,7 +105,7 @@ def main():
 
     # update_job(batch_v1, job)
 
-    delete_job(batch_v1)
+    # delete_job(batch_v1)
 
 
 if __name__ == '__main__':

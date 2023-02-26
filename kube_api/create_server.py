@@ -15,8 +15,8 @@ def create_containers():
             image="kumass2020/fedops-server",
             # command=["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
             resources=client.V1ResourceRequirements(
-                requests={"cpu": "500m", "memory": "512Mi"},
-                limits={"cpu": "1000m", "memory": "1Gi"}
+                requests={"cpu": "1000m", "memory": "1Gi"},
+                limits={"cpu": "4000m", "memory": "4Gi"}
             )
         )
         container_list.append(container)
@@ -29,8 +29,8 @@ def create_job_object():
         image="kumass2020/fedops-server",
         # command=["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
         resources=client.V1ResourceRequirements(
-            requests={"cpu": "500m", "memory": "512Mi"},
-            limits={"cpu": "1000m", "memory": "1Gi"}
+            requests={"cpu": "1000m", "memory": "1Gi"},
+            limits={"cpu": "4000m", "memory": "4Gi"}
         )
     )
     # Create and configure a spec section
@@ -136,7 +136,7 @@ def main():
 
     # update_job(batch_v1, job)
 
-    delete_job(batch_v1)
+    # delete_job(batch_v1)
 
 
 if __name__ == '__main__':
