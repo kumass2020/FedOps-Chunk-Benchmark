@@ -138,5 +138,5 @@ dmypy.json
 cifar-10-python.tar.gz
 cifar-10-batches-py/
 .DS_Store
-config.txt
-config_ssh.txt
+kube_api/config.txt
+kube_api/config_ssh.txt
