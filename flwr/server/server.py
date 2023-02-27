@@ -229,7 +229,8 @@ class Server:
             parameters=self.parameters,
             client_manager=self._client_manager,
         )
-        
+
+        #############
         if server_round >= 2:
             # self.drop_cid_list.append((client_instructions[0])[0].cid)
             self.select_client()

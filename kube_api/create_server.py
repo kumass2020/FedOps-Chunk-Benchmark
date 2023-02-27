@@ -4,29 +4,29 @@ import time
 JOB_NAME = "fedops-server-mjh"
 service_account_name = "fedops-svc-mjh"
 
-def create_containers():
-    container_list = []
-    cpu = 0
-    memory = 0
-
-    for i in range(10):
-        container = client.V1Container(
-            name="fedops-server",
-            image="kumass2020/fedops-server",
-            # command=["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
-            resources=client.V1ResourceRequirements(
-                requests={"cpu": "1000m", "memory": "1Gi"},
-                limits={"cpu": "4000m", "memory": "4Gi"}
-            )
-        )
-        container_list.append(container)
+# def create_containers():
+#     container_list = []
+#     cpu = 0
+#     memory = 0
+#
+#     for i in range(10):
+#         container = client.V1Container(
+#             name="fedops-server",
+#             image="kumass2020/fedops-server",
+#             # command=["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+#             resources=client.V1ResourceRequirements(
+#                 requests={"cpu": "1000m", "memory": "1Gi"},
+#                 limits={"cpu": "4000m", "memory": "4Gi"}
+#             )
+#         )
+#         container_list.append(container)
 
 
 def create_job_object():
     # Configureate Pod template container
     container = client.V1Container(
         name="fedops-server",
-        image="kumass2020/fedops-server",
+        image="kumass2020/fedops-server:10-5-client",
         # command=["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
         resources=client.V1ResourceRequirements(
             requests={"cpu": "1000m", "memory": "1Gi"},
