@@ -4,6 +4,9 @@ import time
 JOB_NAME = "fedops-client-mjh"
 service_account_name = "fedops-svc-mjh"
 
+JOB_NAME2 = "fedops-client-mjh2"
+JOB_NAME3 = "fedops-client-mjh3"
+
 
 def create_containers():
     container_list = []
@@ -16,9 +19,10 @@ def create_containers():
             image="kumass2020/fedops-client",
             # command=["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
             resources=client.V1ResourceRequirements(
-                requests={"cpu": "500m", "memory": "512Mi"},
-                limits={"cpu": "1000m", "memory": "1Gi"}
-            )
+                requests={"cpu": "2000m", "memory": "1Gi"},
+                # limits={"cpu": "8000m", "memory": "8Gi"}
+            ),
+            volume_mounts=[client.V1VolumeMount(name="airflow-nfs", mount_path="/mnt/fedops-mjh")]
         )
         container_list.append(container)
 
@@ -32,7 +36,16 @@ def create_job_object():
     # Create and configure a spec section
     template = client.V1PodTemplateSpec(
         metadata=client.V1ObjectMeta(labels={"app": "fedops-client-mjh"}),
-        spec=client.V1PodSpec(restart_policy="Never", containers=container_list))
+        spec=client.V1PodSpec(
+            restart_policy="Never",
+            containers=[container_list[0]],
+            volumes=[client.V1Volume(
+                name="airflow-nfs",
+                persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
+                    claim_name="fedops-pvc-mjh",
+                    )
+            )]
+        ))
 
     # Create the specification of deployment
     spec = client.V1JobSpec(
@@ -49,12 +62,78 @@ def create_job_object():
     return job
 
 
+def create_job_object2():
+    # Configureate Pod template container
+    container_list = create_containers()
+
+    # Create and configure a spec section
+    template = client.V1PodTemplateSpec(
+        metadata=client.V1ObjectMeta(labels={"app": "fedops-client-mjh2"}),
+        spec=client.V1PodSpec(
+            restart_policy="Never",
+            containers=[container_list[1]],
+            volumes=[client.V1Volume(
+                name="airflow-nfs",
+                persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
+                    claim_name="fedops-pvc-mjh",
+                    )
+            )]
+        ))
+
+    # Create the specification of deployment
+    spec = client.V1JobSpec(
+        template=template,
+        backoff_limit=4)
+
+    # Instantiate the job object
+    job = client.V1Job(
+        api_version="batch/v1",
+        kind="Job",
+        metadata=client.V1ObjectMeta(name=JOB_NAME2),
+        spec=spec)
+
+    return job
+
+
+def create_job_object3():
+    # Configureate Pod template container
+    container_list = create_containers()
+
+    # Create and configure a spec section
+    template = client.V1PodTemplateSpec(
+        metadata=client.V1ObjectMeta(labels={"app": "fedops-client-mjh3"}),
+        spec=client.V1PodSpec(
+            restart_policy="Never",
+            containers=[container_list[2]],
+            volumes=[client.V1Volume(
+                name="airflow-nfs",
+                persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
+                    claim_name="fedops-pvc-mjh",
+                    )
+            )]
+        ))
+
+    # Create the specification of deployment
+    spec = client.V1JobSpec(
+        template=template,
+        backoff_limit=4)
+
+    # Instantiate the job object
+    job = client.V1Job(
+        api_version="batch/v1",
+        kind="Job",
+        metadata=client.V1ObjectMeta(name=JOB_NAME3),
+        spec=spec)
+
+    return job
+
+
 def create_job(api_instance, job):
     api_response = api_instance.create_namespaced_job(
         body=job,
         namespace="fedops")
     print("Job created. status='%s'" % str(api_response.status))
-    get_job_status(api_instance)
+    # get_job_status(api_instance)
 
 
 def get_job_status(api_instance):
@@ -97,17 +176,20 @@ def main():
     config.load_kube_config('config_ssh.txt')
     batch_v1 = client.BatchV1Api()
 
-    containers_list = create_containers()
-
     # Create a job object with client-python API. The job we
     # created is same as the `pi-job.yaml` in the /examples folder.
-    job = create_job_object(container)
+    for i in range(10):
+    job = create_job_object()
+    job2 = create_job_object2()
+    job3 = create_job_object3()
 
     create_job(batch_v1, job)
+    create_job(batch_v1, job2)
+    create_job(batch_v1, job3)
 
     # update_job(batch_v1, job)
 
-    delete_job(batch_v1)
+    # delete_job(batch_v1)
 
 
 if __name__ == '__main__':
