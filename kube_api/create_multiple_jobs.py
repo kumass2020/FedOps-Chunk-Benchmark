@@ -5,7 +5,7 @@ JOB_NAME = "fedops-client-mjh"
 SERVER_JOB_NAME = "fedops-server-mjh"
 service_account_name = "fedops-svc-mjh"
 
-jobs_num = 1
+jobs_num = 10
 
 
 def create_containers():
@@ -16,14 +16,20 @@ def create_containers():
     for i in range(jobs_num):
         container = client.V1Container(
             name=f"fedops-client-{i}",
-            image="kumass2020/fedops-client:latest",
+            image="kumass2020/fedops-client:no-data",
             # image_pull_policy="Always",
-            # command=["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+            # command=["sh", "-c", "mkdir -p /home/ccl/fedops-mjh/mnt"],
             resources=client.V1ResourceRequirements(
-                requests={"cpu": "4000m", "memory": "2Gi"},
-                limits={"cpu": "8000m", "memory": "4Gi"}
+                requests={"cpu": "2000m", "memory": "2Gi"},
+                limits={"cpu": "4000m", "memory": "4Gi"}
             ),
-            volume_mounts=[client.V1VolumeMount(name="airflow-nfs", mount_path="/mnt/fedops-mjh")]
+            # volume_mounts=[client.V1VolumeMount(name="airflow-nfs", mount_path="/mnt/fedops-mjh")]
+            # volume_mounts=[
+            #     client.V1VolumeMount(
+            #         name="microk8s-hostpath",
+            #         mount_path="/home/ccl/fedops-mjh/mnt"
+            #     )
+            # ]
         )
         container_list.append(container)
 
@@ -51,20 +57,27 @@ def create_job_object(job_num: int):
         spec=client.V1PodSpec(
             restart_policy="Never",
             containers=[container_list[job_num]],
-            volumes=[client.V1Volume(
-                name="airflow-nfs",
-                persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
-                    claim_name="fedops-pvc-mjh",
-                    )
-            )],
-            node_name=node_name
+            # volumes=[client.V1Volume(
+            #     name="airflow-nfs",
+            #     persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
+            #         claim_name="fedops-pvc-mjh"
+            #         )
+            # )],
+            # volumes=[
+            #     client.V1Volume(
+            #         name="microk8s-hostpath",
+            #         host_path=client.V1HostPathVolumeSource(path="home/ccl/fedops-mjh/mnt")
+            #     )
+            # ]
+            # node_name=node_name,
+            # preemption_policy="Never"
         ))
 
     # Create the specification of deployment
     spec = client.V1JobSpec(
         template=template,
-        parallelism=3,
-        completions=3,
+        # parallelism=3,
+        # completions=3,
         backoff_limit=4)
 
     # Instantiate the job object
@@ -81,7 +94,7 @@ def create_server_job_object():
     # Configureate Pod template container
     container = client.V1Container(
         name="fedops-server",
-        image="kumass2020/fedops-server:latest",
+        image="kumass2020/fedops-server:10-5-client",
         # command=["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
         resources=client.V1ResourceRequirements(
             requests={"cpu": "1000m", "memory": "1Gi"},
