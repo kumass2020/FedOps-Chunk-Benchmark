@@ -6,7 +6,7 @@ COPY ./requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 COPY ./small_net_client.py client.py
 COPY ./flwr ./flwr
-COPY ./data ./data
+# COPY ./data ./data
 EXPOSE 8080
 ENTRYPOINT [ "python3", "/app/client.py" ]
 

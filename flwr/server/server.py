@@ -147,7 +147,8 @@ class Server:
     
     def select_client(self):
         global client_list_by_time
-        self.drop_cid_list.append(client_list_by_time[-1])
+        for i in range(5):
+            self.drop_cid_list.append(client_list_by_time[-1])
     
     def drop_client(self, client_instructions):
         for i, ci in enumerate(client_instructions):

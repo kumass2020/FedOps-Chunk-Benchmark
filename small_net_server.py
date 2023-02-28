@@ -17,11 +17,11 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
 # Define strategy
 strategy = fl.server.strategy.FedAvg(
     evaluate_metrics_aggregation_fn=weighted_average,
-    min_fit_clients=3,
-    min_evaluate_clients=3,
-    min_available_clients=3,
+    min_fit_clients=10,
+    min_evaluate_clients=10,
+    min_available_clients=10,
 )
-
+# server = fl.server.Server
 client_manager = fl.server.SimpleClientManager(is_random=1)
 
 # Start Flower server
@@ -29,5 +29,5 @@ fl.server.start_server(
     server_address="0.0.0.0:8080",
     config=fl.server.ServerConfig(num_rounds=2),
     strategy=strategy,
-    client_manager=client_manager
+    client_manager=client_manager,
 )
