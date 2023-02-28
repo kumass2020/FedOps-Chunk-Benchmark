@@ -22,3 +22,10 @@ for container in client.containers.list(all=True, filters={'name': client_name_p
     container.stop()
     print(f"Removing container {container.name}...")
     container.remove()
+
+    # # Check if the container was created from the correct image
+    # if container.image.tags[0].startswith(client_image):
+    #     print(f"Removing image {container.image.tags[0]}...")
+    #     client.images.remove(container.image.tags[0])
+    # else:
+    #     print(f"Skipping image removal for {container.image.tags[0]} (not a {client_image} image)")
