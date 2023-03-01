@@ -30,6 +30,6 @@ class CifarClient(fl.client.NumPyClient):
 
 
 # Start Flower client
-# fl.client.start_numpy_client(server_address="127.0.0.1:8080", client=CifarClient())
+fl.client.start_numpy_client(server_address="127.0.0.1:8080", client=CifarClient())
 # fl.client.start_numpy_client(server_address="fedops-server-mjh:8080", client=CifarClient())
-fl.client.start_numpy_client(server_address="10.152.183.171:8080", client=CifarClient())
+# fl.client.start_numpy_client(server_address="10.152.183.171:8080", client=CifarClient())

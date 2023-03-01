@@ -16,7 +16,17 @@ from tqdm import tqdm
 # #############################################################################
 
 warnings.filterwarnings("ignore", category=UserWarning)
+torch.set_num_threads(2)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+
+# def create_net():
+#     net = Net().to(DEVICE)
+#     state_dict = net.state_dict()
+#     for key in state_dict:
+#         state_dict[key] = torch.randn_like(state_dict[key])
+#     net.load_state_dict(state_dict)
+#     return net
 
 
 class Net(nn.Module):
@@ -119,35 +129,55 @@ def load_data():
 # #############################################################################
 
 # Load model and data (simple CNN, CIFAR-10)
-net = Net().to(DEVICE)
+net1 = Net().to(DEVICE)
+net2 = Net().to(DEVICE)
+
 trainloader, testloader = load_data()
 
 
 # Define Flower client
 class FlowerClient(fl.client.NumPyClient):
+    def __init__(self, net):
+        super().__init__()
+        self.net = net
+
     def get_parameters(self, config):
-        return [val.cpu().numpy() for _, val in net.state_dict().items()]
+        return [val.cpu().numpy() for _, val in self.net.state_dict().items()]
 
     def set_parameters(self, parameters):
-        params_dict = zip(net.state_dict().keys(), parameters)
+        params_dict = zip(self.net.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.tensor(v) for k, v in params_dict})
-        net.load_state_dict(state_dict, strict=True)
+        self.net.load_state_dict(state_dict, strict=True)
 
     def fit(self, parameters, config):
         self.set_parameters(parameters)
-        train(net, trainloader, epochs=1)
+        train(self.net, trainloader, epochs=1)
         return self.get_parameters(config={}), len(trainloader.dataset), {}
 
     def evaluate(self, parameters, config):
         self.set_parameters(parameters)
-        loss, accuracy = test(net, testloader)
+        loss, accuracy = test(self.net, testloader)
         return loss, len(testloader.dataset), {"accuracy": accuracy}
 
+
+bench_client = FlowerClient(net1)
+real_client = FlowerClient(net2)
 
 # Start Flower client
 fl.client.start_numpy_client(
     # server_address="192.168.1.248:8080",
     # server_address="0.0.0.0:8080",
-    server_address="10.152.183.171:8080",
-    client=FlowerClient(),
+    server_address="127.0.0.1:8080",
+    # server_address="10.152.183.171:8080",
+    client=bench_client,
 )
+
+# Start Flower client
+fl.client.start_numpy_client(
+    # server_address="192.168.1.248:8080",
+    # server_address="0.0.0.0:8080",
+    server_address="127.0.0.1:8080",
+    # server_address="10.152.183.171:8080",
+    client=real_client,
+)
+

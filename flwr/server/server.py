@@ -51,12 +51,15 @@ ReconnectResultsAndFailures = Tuple[
     List[Union[Tuple[ClientProxy, DisconnectRes], BaseException]],
 ]
 
+# cid, train_time, comm_time
+client_list_by_time: [[str, float, float]] = None
+
 
 class Server:
     """Flower server."""
 
     def __init__(
-        self, *, client_manager: ClientManager, strategy: Optional[Strategy] = None
+        self, *, client_manager: ClientManager, strategy: Optional[Strategy] = None, drop_cid_list=None
     ) -> None:
         self._client_manager: ClientManager = client_manager
         self.parameters: Parameters = Parameters(
@@ -64,7 +67,10 @@ class Server:
         )
         self.strategy: Strategy = strategy if strategy is not None else FedAvg()
         self.max_workers: Optional[int] = None
-        self.drop_cid_list: list[str] = []
+
+        self.drop_cid_list: list[str] = drop_cid_list
+        # global client_list_by_time
+        # client_list_by_time
 
     def set_max_workers(self, max_workers: Optional[int]) -> None:
         """Set the max_workers used by ThreadPoolExecutor."""
@@ -145,16 +151,22 @@ class Server:
         log(INFO, "FL finished in %s", elapsed)
         return history
     
-    def select_client(self):
-        global client_list_by_time
-        for i in range(5):
-            self.drop_cid_list.append(client_list_by_time[-1])
+    # def select_client(self):
+    #     # cid, train_time, comm_time
+    #     if self.drop_cid_list is not None:
+    #         for i in range(5):
+    #             self.drop_cid_list.append(client_list_by_time[-1])
     
     def drop_client(self, client_instructions):
-        for i, ci in enumerate(client_instructions):
-            if ci[0].cid in self.drop_cid_list:
-                del client_instructions[i]
+        if self.drop_cid_list is not None:
+            for i, ci in enumerate(client_instructions):
+                if ci[0].cid in self.drop_cid_list:
+                    del client_instructions[i]
         return client_instructions
+
+    def get_client_list_by_time(self):
+        global client_list_by_time
+        return client_list_by_time
 
     def evaluate_round(
         self,
@@ -175,8 +187,8 @@ class Server:
             client_manager=self._client_manager,
         )
         
-        if server_round >= 2:
-            client_instructions = self.drop_client(client_instructions)
+        # if server_round >= 2:
+        client_instructions = self.drop_client(client_instructions)
             
         if not client_instructions:
             log(INFO, "evaluate_round %s: no clients selected, cancel", server_round)
@@ -232,10 +244,10 @@ class Server:
         )
 
         #############
-        if server_round >= 2:
-            # self.drop_cid_list.append((client_instructions[0])[0].cid)
-            self.select_client()
-            client_instructions = self.drop_client(client_instructions)
+        # if server_round >= 2:
+        #     # self.drop_cid_list.append((client_instructions[0])[0].cid)
+        #     self.select_client()
+        client_instructions = self.drop_client(client_instructions)
 
         if not client_instructions:
             log(INFO, "fit_round %s: no clients selected, cancel", server_round)
@@ -388,13 +400,14 @@ def fit_client(
     fit_res = client.fit(ins, timeout=timeout)
 
     global client_start_time, client_list_by_time
-    client_list_by_time.append(client.cid)
-    
     client_end_time = timeit.default_timer()
     elapsed_time = client_end_time - client_start_time
     train_time = float(fit_res.metrics['train_time'])
-    log(INFO, "cid: " + client.cid + " - train + comm: " + '{:.4f}'.format(elapsed_time) 
-        + 's - train: ' + '{:.4f}'.format(train_time) + 's')
+
+    client_list_by_time.append([client.cid, train_time, elapsed_time])
+
+    log(INFO, "cid: " + client.cid + '- train: ' + '{:.4f}'.format(train_time) +
+        "s - train + comm: " + '{:.4f}'.format(elapsed_time) + 's')
     a = fit_res.metrics['train_time']
 
     return client, fit_res
