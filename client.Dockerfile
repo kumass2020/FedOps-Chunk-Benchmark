@@ -8,7 +8,8 @@ WORKDIR /app
 
 RUN pip install -r requirements.txt
 
-COPY ./cnn_client.py client.py
+COPY ./advanced_client.py client.py
+COPY ./utils.py utils.py
 #COPY ./tf_small_net_client.py client.py
 
 COPY ./flwr ./flwr

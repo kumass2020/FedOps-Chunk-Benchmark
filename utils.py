@@ -188,3 +188,5 @@ def test(net, testloader, device: str = "cpu"):
             correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
     accuracy = correct / len(testloader.dataset)
     return loss, accuracy
+
+

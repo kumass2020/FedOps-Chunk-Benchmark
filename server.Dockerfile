@@ -10,10 +10,11 @@ RUN pip install -r requirements.txt
 
 RUN wandb login fa67dec671c4384afbb282bd683f98d443c6b1d1
 
-COPY ./cnn_server.py server.py
-#COPY ./tf_small_net_server.py server.py
+COPY ./advanced_server.py server.py
+COPY ./utils.py utils.py
 
 COPY ./flwr ./flwr
+COPY ./data ./data
 EXPOSE 8080
 ENTRYPOINT [ "python3", "/app/server.py" ]
 

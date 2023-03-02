@@ -8,7 +8,7 @@ from collections import OrderedDict
 import warnings
 
 warnings.filterwarnings("ignore")
-# torch.set_num_threads(2)
+torch.set_num_threads(2)
 
 
 class CifarClient(fl.client.NumPyClient):
@@ -43,6 +43,7 @@ class CifarClient(fl.client.NumPyClient):
         # Get hyperparameters for this round
         batch_size: int = config["batch_size"]
         epochs: int = config["local_epochs"]
+        epochs = 5
 
         n_valset = int(len(self.trainset) * self.validation_split)
 
@@ -153,8 +154,8 @@ def main() -> None:
         fl.client.start_numpy_client(
             # server_address="192.168.1.248:8080",
             # server_address="0.0.0.0:8080",
-            server_address="127.0.0.1:8080",
-            # server_address="10.152.183.171:8080",
+            # server_address="127.0.0.1:8080",
+            server_address="10.152.183.171:8080",
             client=client)
 
 

@@ -432,7 +432,7 @@ def fit_client(
 
     client_list_by_time.append([client.cid, train_time, elapsed_time])
 
-    log(INFO, "cid: " + client.cid + '- train: ' + '{:.4f}'.format(train_time) +
+    log(INFO, "cid: " + client.cid + ' - train: ' + '{:.4f}'.format(train_time) +
         "s - train + comm: " + '{:.4f}'.format(elapsed_time) + 's')
     a = fit_res.metrics['train_time']
 

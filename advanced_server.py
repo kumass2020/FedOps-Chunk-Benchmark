@@ -1,17 +1,32 @@
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, List
 from collections import OrderedDict
 import argparse
 from torch.utils.data import DataLoader
 
 import flwr as fl
+from flwr.common import Metrics
+
 import torch
 
 import utils
-
 import warnings
+import wandb
 
 warnings.filterwarnings("ignore")
-# torch.set_num_threads(4)
+torch.set_num_threads(4)
+
+
+# Define metric aggregation function
+def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
+    # Multiply accuracy of each client by number of examples used
+    accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
+    examples = [num_examples for num_examples, _ in metrics]
+
+    # Aggregate and return custom metric (weighted average)
+    accuracy = sum(accuracies) / sum(examples)
+    wandb.log({"distributed_accuracy": accuracy})
+    # fl.server.History().losses_distributed
+    return {"accuracy": accuracy}
 
 
 def fit_config(server_round: int):
@@ -64,6 +79,7 @@ def get_evaluate_fn(model: torch.nn.Module, toy: bool):
         model.load_state_dict(state_dict, strict=True)
 
         loss, accuracy = utils.test(model, valLoader)
+        wandb.log({"centralized_loss": loss, "centralized_accuracy": accuracy, "server_round": server_round})
         return loss, {"accuracy": accuracy}
 
     return evaluate
@@ -94,21 +110,37 @@ def main():
 
     # Create strategy
     strategy = fl.server.strategy.FedAvg(
-        fraction_fit=0.2,
-        fraction_evaluate=0.2,
-        min_fit_clients=3,
-        min_evaluate_clients=3,
-        min_available_clients=3,
+        # fraction_fit=0.2,
+        # fraction_evaluate=0.2,
+        min_fit_clients=50,
+        min_evaluate_clients=50,
+        min_available_clients=50,
         evaluate_fn=get_evaluate_fn(model, args.toy),
         on_fit_config_fn=fit_config,
         on_evaluate_config_fn=evaluate_config,
         initial_parameters=fl.common.ndarrays_to_parameters(model_parameters),
+        evaluate_metrics_aggregation_fn=weighted_average,
+    )
+
+    # start a new wandb run to track this script
+    wandb.init(
+        entity="hoho",
+        # set the wandb project where this run will be logged
+        project="fedops-server",
+
+        # track hyperparameters and run metadata
+        config={
+            "learning_rate": 0.001,
+            "architecture": "CNN",
+            "dataset": "CIFAR-10",
+            "epochs": 5,
+        }
     )
 
     # Start Flower server for four rounds of federated learning
     fl.server.start_server(
         server_address="0.0.0.0:8080",
-        config=fl.server.ServerConfig(num_rounds=3),
+        config=fl.server.ServerConfig(num_rounds=30),
         strategy=strategy,
     )
 
