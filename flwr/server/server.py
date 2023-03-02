@@ -38,6 +38,8 @@ from flwr.server.client_proxy import ClientProxy
 from flwr.server.history import History
 from flwr.server.strategy import FedAvg, Strategy
 
+import statistics
+
 FitResultsAndFailures = Tuple[
     List[Tuple[ClientProxy, FitRes]],
     List[Union[Tuple[ClientProxy, FitRes], BaseException]],
@@ -52,7 +54,7 @@ ReconnectResultsAndFailures = Tuple[
 ]
 
 # cid, train_time, comm_time
-client_list_by_time: [[str, float, float]] = None
+client_list_by_time: [[str, float, float]] = []
 
 
 class Server:
@@ -151,14 +153,25 @@ class Server:
         log(INFO, "FL finished in %s", elapsed)
         return history
     
-    # def select_client(self):
-    #     # cid, train_time, comm_time
-    #     if self.drop_cid_list is not None:
-    #         for i in range(5):
-    #             self.drop_cid_list.append(client_list_by_time[-1])
+    def select_client(self):
+        global client_list_by_time
+        execution_time_list = []
+        if len(client_list_by_time) > 0:
+            for li in client_list_by_time:
+                execution_time_list.append(li[1])
+            median_execution_time = statistics.median(execution_time_list)
+            mad_execution_time = statistics.median([abs(x - median_execution_time) for x in execution_time_list])
+
+            adaptive_threshold = median_execution_time + 2 * mad_execution_time
+            log(INFO, "adaptive threshold:" + '{:.4f}'.format(adaptive_threshold))
+            # for i in range(5):
+            #     self.drop_cid_list.append((client_list_by_time[-1])[0])
+            for i, li in enumerate(client_list_by_time):
+                if li[1] > adaptive_threshold:
+                    self.drop_cid_list.append((client_list_by_time[i])[0])
     
     def drop_client(self, client_instructions):
-        if self.drop_cid_list is not None:
+        if len(self.drop_cid_list) > 0:
             for i, ci in enumerate(client_instructions):
                 if ci[0].cid in self.drop_cid_list:
                     del client_instructions[i]
@@ -178,7 +191,7 @@ class Server:
         """Validate current global model on a number of clients."""
 
         # if server_round >= 2:
-        #     self.strategy.configure_evaluate
+            # self.strategy.configure_evaluate
 
         # Get clients and their respective instructions from strategy
         client_instructions = self.strategy.configure_evaluate(
@@ -187,7 +200,8 @@ class Server:
             client_manager=self._client_manager,
         )
         
-        # if server_round >= 2:
+        if server_round == 2:
+            self.select_client()
         client_instructions = self.drop_client(client_instructions)
             
         if not client_instructions:
@@ -244,9 +258,9 @@ class Server:
         )
 
         #############
-        # if server_round >= 2:
+        if server_round == 2:
         #     # self.drop_cid_list.append((client_instructions[0])[0].cid)
-        #     self.select_client()
+            self.select_client()
         client_instructions = self.drop_client(client_instructions)
 
         if not client_instructions:
