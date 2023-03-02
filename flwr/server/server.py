@@ -179,7 +179,7 @@ class Server:
                         self.drop_cid_list.append(target_cid)
                         log(INFO, "dropped cid : " + target_cid)
                         log(INFO, "time difference to threshold : " + '{:.4f}'.format(target_cid_time - adaptive_threshold))
-                log(INFO, str(count) + " client dropped.")
+            log(INFO, str(count) + " client dropped.")
     
     def drop_client(self, client_instructions):
         if self.drop_cid_list is not None:

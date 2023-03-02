@@ -32,7 +32,7 @@ class History:
 
     def add_loss_distributed(self, server_round: int, loss: float) -> None:
         """Add one loss entry (from distributed evaluation)."""
-        wandb.log({"distributed_loss": loss})
+        wandb.log({"distributed_loss": loss, "server_round": server_round})
         self.losses_distributed.append((server_round, loss))
 
     def add_loss_centralized(self, server_round: int, loss: float) -> None:

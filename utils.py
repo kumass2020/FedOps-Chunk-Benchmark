@@ -15,14 +15,6 @@ warnings.filterwarnings("ignore")
 
 def load_data():
     """Load CIFAR-10 (training and test set)."""
-    # transform = transforms.Compose(
-    #     [
-    #         transforms.Resize(256),
-    #         transforms.CenterCrop(224),
-    #         transforms.ToTensor(),
-    #         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    #     ]
-    # )
     trf = Compose([ToTensor(), Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     trainset = CIFAR10("./data", train=True, download=True, transform=trf)
@@ -34,18 +26,18 @@ def load_data():
 
 def load_partition(idx: int):
     """Load 1/10th of the training and test data to simulate a partition."""
-    assert idx in range(2)
+    assert idx in range(50)
     trainset, testset, num_examples = load_data()
-    n_train = int(num_examples["trainset"] / 2)
-    n_test = int(num_examples["testset"] / 2)
+    n_train = int(num_examples["trainset"] / 50)
+    n_test = int(num_examples["testset"] / 50)
 
-    train_parition = torch.utils.data.Subset(
+    train_partition = torch.utils.data.Subset(
         trainset, range(idx * n_train, (idx + 1) * n_train)
     )
-    test_parition = torch.utils.data.Subset(
+    test_partition = torch.utils.data.Subset(
         testset, range(idx * n_test, (idx + 1) * n_test)
     )
-    return (train_parition, test_parition)
+    return (train_partition, test_partition)
 
 
 # def train(net, trainloader, valloader, epochs, device: str = "cpu"):

@@ -111,7 +111,7 @@ def main() -> None:
         "--partition",
         type=int,
         default=0,
-        choices=range(0, 10),
+        choices=range(0, 50),
         required=False,
         help="Specifies the artificial data partition of CIFAR10 to be used. \
         Picks partition 0 by default",

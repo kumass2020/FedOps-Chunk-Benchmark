@@ -13,8 +13,9 @@ import warnings
 import wandb
 
 warnings.filterwarnings("ignore")
-torch.set_num_threads(4)
+torch.set_num_threads(8)
 
+_server_round = 0
 
 # Define metric aggregation function
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
@@ -26,7 +27,7 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     accuracy = sum(accuracies) / sum(examples)
     wandb.log({"distributed_accuracy": accuracy})
     # fl.server.History().losses_distributed
-    return {"accuracy": accuracy}
+    return {"accuracy": accuracy, "_server_round": _server_round}
 
 
 def fit_config(server_round: int):
@@ -73,6 +74,8 @@ def get_evaluate_fn(model: torch.nn.Module, toy: bool):
         parameters: fl.common.NDArrays,
         config: Dict[str, fl.common.Scalar],
     ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
+        global _server_round
+        _server_round = server_round
         # Update model with the latest parameters
         params_dict = zip(model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.tensor(v) for k, v in params_dict})
