@@ -141,3 +141,4 @@ cifar-10-batches-py/
 kube_api/config.txt
 kube_api/config_ssh.txt
 #simulation_pytorch
+wandb/

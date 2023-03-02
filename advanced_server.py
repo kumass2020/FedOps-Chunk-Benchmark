@@ -1,20 +1,18 @@
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
+from collections import OrderedDict
+import argparse
+from torch.utils.data import DataLoader
 
 import flwr as fl
-from flwr.common import Metrics
+import torch
 
 import utils
-import argparse
-from collections import OrderedDict
 
-import wandb
+import warnings
 
-import torch
-from torch.utils.data import DataLoader, SubsetRandomSampler
+warnings.filterwarnings("ignore")
+# torch.set_num_threads(4)
 
-from typing import Dict, Optional, Tuple
-
-torch.set_num_threads(4)
 
 def fit_config(server_round: int):
     """Return training configuration dict for each round.
@@ -71,18 +69,6 @@ def get_evaluate_fn(model: torch.nn.Module, toy: bool):
     return evaluate
 
 
-# Define metric aggregation function
-def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
-    # Multiply accuracy of each client by number of examples used
-    accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
-    examples = [num_examples for num_examples, _ in metrics]
-
-    # Aggregate and return custom metric (weighted average)
-    accuracy = sum(accuracies) / sum(examples)
-    wandb.log({"accuracy": accuracy})
-    return {"accuracy": accuracy}
-
-
 def main():
     """Load model for
     1. server-side parameter initialization
@@ -102,54 +88,30 @@ def main():
 
     args = parser.parse_args()
 
-    model = utils.load_efficientnet(classes=10)
+    model = utils.Net()
 
     model_parameters = [val.cpu().numpy() for _, val in model.state_dict().items()]
 
-    client_manager = fl.server.SimpleClientManager(is_random=1)
-
-    # Define strategy
+    # Create strategy
     strategy = fl.server.strategy.FedAvg(
         fraction_fit=0.2,
         fraction_evaluate=0.2,
-        evaluate_metrics_aggregation_fn=weighted_average,
-        evaluate_fn=get_evaluate_fn(model, args.toy),
-        on_fit_config_fn=fit_config,
-        on_evaluate_config_fn=evaluate_config,
         min_fit_clients=3,
         min_evaluate_clients=3,
         min_available_clients=3,
+        evaluate_fn=get_evaluate_fn(model, args.toy),
+        on_fit_config_fn=fit_config,
+        on_evaluate_config_fn=evaluate_config,
         initial_parameters=fl.common.ndarrays_to_parameters(model_parameters),
     )
 
-    # server = fl.server.Server(
-    #     client_manager=client_manager,
-    #     strategy=strategy,
-    # )
-
-    # start a new wandb run to track this script
-    wandb.init(
-        entity="hoho",
-        # set the wandb project where this run will be logged
-        project="fedops-server",
-
-        # track hyperparameters and run metadata
-        config={
-            "learning_rate": 0.001,
-            "architecture": "CNN",
-            "dataset": "CIFAR-10",
-            "epochs": 5,
-        }
-    )
-
-    # Start Flower server
+    # Start Flower server for four rounds of federated learning
     fl.server.start_server(
         server_address="0.0.0.0:8080",
-        config=fl.server.ServerConfig(num_rounds=4),
+        config=fl.server.ServerConfig(num_rounds=3),
         strategy=strategy,
-        client_manager=client_manager,
-        # server=server,
     )
+
 
 if __name__ == "__main__":
     main()

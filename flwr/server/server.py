@@ -70,7 +70,8 @@ class Server:
         self.strategy: Strategy = strategy if strategy is not None else FedAvg()
         self.max_workers: Optional[int] = None
 
-        self.drop_cid_list: list[str] = drop_cid_list
+        # self.drop_cid_list: list[str] = drop_cid_list
+        self.drop_cid_list: list[str] = []
         # global client_list_by_time
         # client_list_by_time
 
@@ -156,6 +157,7 @@ class Server:
     def select_client(self):
         global client_list_by_time
         execution_time_list = []
+        count = 0
         if len(client_list_by_time) > 0:
             for li in client_list_by_time:
                 execution_time_list.append(li[1])
@@ -168,13 +170,23 @@ class Server:
             #     self.drop_cid_list.append((client_list_by_time[-1])[0])
             for i, li in enumerate(client_list_by_time):
                 if li[1] > adaptive_threshold:
-                    self.drop_cid_list.append((client_list_by_time[i])[0])
+                    target_cid = (client_list_by_time[i])[0]
+                    target_cid_time = (client_list_by_time[i])[1]
+                    time_difference = target_cid_time - adaptive_threshold
+
+                    if time_difference >= 5:
+                        count += 1
+                        self.drop_cid_list.append(target_cid)
+                        log(INFO, "dropped cid : " + target_cid)
+                        log(INFO, "time difference to threshold : " + '{:.4f}'.format(target_cid_time - adaptive_threshold))
+                log(INFO, str(count) + " client dropped.")
     
     def drop_client(self, client_instructions):
-        if len(self.drop_cid_list) > 0:
-            for i, ci in enumerate(client_instructions):
-                if ci[0].cid in self.drop_cid_list:
-                    del client_instructions[i]
+        if self.drop_cid_list is not None:
+            if len(self.drop_cid_list) > 0:
+                for i, ci in enumerate(client_instructions):
+                    if ci[0].cid in self.drop_cid_list:
+                        del client_instructions[i]
         return client_instructions
 
     def get_client_list_by_time(self):
