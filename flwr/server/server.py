@@ -39,6 +39,7 @@ from flwr.server.history import History
 from flwr.server.strategy import FedAvg, Strategy
 
 import statistics
+import wandb
 
 FitResultsAndFailures = Tuple[
     List[Tuple[ClientProxy, FitRes]],
@@ -187,6 +188,7 @@ class Server:
                 for i, ci in enumerate(client_instructions):
                     if ci[0].cid in self.drop_cid_list:
                         del client_instructions[i]
+                        log(INFO, str(i) + " client dropped: " + ci[0].cid)
         return client_instructions
 
     def get_client_list_by_time(self):
@@ -212,10 +214,10 @@ class Server:
             client_manager=self._client_manager,
         )
         
-        if server_round == 2:
-            self.select_client()
+        # if server_round == 2:
+        #     self.select_client()
         client_instructions = self.drop_client(client_instructions)
-            
+        wandb.log({"evaluate_clients_number": len(client_instructions), "server_round": server_round})
         if not client_instructions:
             log(INFO, "evaluate_round %s: no clients selected, cancel", server_round)
             return None
@@ -275,6 +277,7 @@ class Server:
             self.select_client()
         client_instructions = self.drop_client(client_instructions)
 
+        wandb.log({"fit_clients_number": len(client_instructions), "server_round": server_round})
         if not client_instructions:
             log(INFO, "fit_round %s: no clients selected, cancel", server_round)
             return None

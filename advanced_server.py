@@ -25,9 +25,9 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
 
     # Aggregate and return custom metric (weighted average)
     accuracy = sum(accuracies) / sum(examples)
-    wandb.log({"distributed_accuracy": accuracy})
+    wandb.log({"distributed_accuracy": accuracy, "server_round": _server_round})
     # fl.server.History().losses_distributed
-    return {"accuracy": accuracy, "_server_round": _server_round}
+    return {"accuracy": accuracy}
 
 
 def fit_config(server_round: int):

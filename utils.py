@@ -25,7 +25,7 @@ def load_data():
 
 
 def load_partition(idx: int):
-    """Load 1/10th of the training and test data to simulate a partition."""
+    """Load 1/50th of the training and test data to simulate a partition."""
     assert idx in range(50)
     trainset, testset, num_examples = load_data()
     n_train = int(num_examples["trainset"] / 50)
