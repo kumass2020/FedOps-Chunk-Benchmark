@@ -43,7 +43,7 @@ class CifarClient(fl.client.NumPyClient):
         # Get hyperparameters for this round
         batch_size: int = config["batch_size"]
         epochs: int = config["local_epochs"]
-        batch_size = 64
+        batch_size = 32
         epochs = 5
 
         n_valset = int(len(self.trainset) * self.validation_split)
