@@ -166,7 +166,7 @@ class Server:
                 execution_time_list.append(li[1])
             median_execution_time = statistics.median(execution_time_list)
             mad_execution_time = statistics.median([abs(x - median_execution_time) for x in execution_time_list])
-            cut_off = 2.5
+            cut_off = 3
 
             adaptive_threshold = median_execution_time + cut_off * mad_execution_time
             log(INFO, "adaptive threshold:" + '{:.4f}'.format(adaptive_threshold))

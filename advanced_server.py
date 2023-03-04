@@ -40,8 +40,9 @@ def fit_config(server_round: int):
     local epoch, increase to two local epochs afterwards.
     """
     config = {
-        "batch_size": 16,
-        "local_epochs": 1 if server_round < 2 else 2,
+        "batch_size": 64,
+        # "local_epochs": 1 if server_round < 2 else 5,
+        "local_epochs": 5
     }
     return config
 
@@ -150,6 +151,7 @@ def main():
             "min_clients": 50,
             "rounds": 1000,
             "client_selection": "on",
+            "threshold": 3,
 
             "client_version": "v9",
             "epochs": 5,
