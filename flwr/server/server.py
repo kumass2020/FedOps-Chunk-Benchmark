@@ -166,8 +166,9 @@ class Server:
                 execution_time_list.append(li[1])
             median_execution_time = statistics.median(execution_time_list)
             mad_execution_time = statistics.median([abs(x - median_execution_time) for x in execution_time_list])
+            cut_off = 2.5
 
-            adaptive_threshold = median_execution_time + 2 * mad_execution_time
+            adaptive_threshold = median_execution_time + cut_off * mad_execution_time
             log(INFO, "adaptive threshold:" + '{:.4f}'.format(adaptive_threshold))
             # for i in range(5):
             #     self.drop_cid_list.append((client_list_by_time[-1])[0])
@@ -177,30 +178,34 @@ class Server:
                     target_cid = (client_list_by_time[i])[0]
                     target_cid_time = (client_list_by_time[i])[1]
                     time_difference = target_cid_time - adaptive_threshold
+                    # cutoff = (target_cid_time - adaptive_threshold) / std_execution_time
 
-                    if time_difference >= 5:
+                    # if time_difference >= 1:
                     # if self.drop_client_count <= 1:
-                        self.drop_client_count += 1
-                        self.drop_cid_list.append(target_cid)
-                        log(INFO, "dropped cid : " + target_cid)
-                        log(INFO,
-                            "time difference to threshold : " + '{:.4f}'.format(target_cid_time - adaptive_threshold))
+                    # if cutoff > 1:
+                    self.drop_client_count += 1
+                    self.drop_cid_list.append(target_cid)
+                    log(INFO, "dropped cid : " + target_cid)
+                    log(INFO,
+                        "time difference to threshold : " + '{:.4f}'.format(target_cid_time - adaptive_threshold))
             log(INFO, str(self.drop_client_count) + " clients dropped.")
     
     def drop_client(self, client_instructions):
-        count = 0
-        ci_copy = client_instructions.copy()
-        if self.drop_cid_list is not None:
-            if len(self.drop_cid_list) > 0:
-                for i, ci in enumerate(ci_copy):
-                    # log(INFO, str(ci[0].cid in self.drop_cid_list) + " " + ci[0].cid + " " + str(self.drop_cid_list))
-                    if ci[0].cid in self.drop_cid_list:
-                        count += 1
-                        client_instructions.remove(ci)
-                        # log(INFO,
-                        #     str(count) + " (out of " + str(self.drop_client_count) + ") clients dropped: " + ci[0].cid)
-                if self.drop_client_count != count:
-                    log(INFO, "dropping clients error")
+        client_select = True
+        if client_select:
+            count = 0
+            ci_copy = client_instructions.copy()
+            if self.drop_cid_list is not None:
+                if len(self.drop_cid_list) > 0:
+                    for i, ci in enumerate(ci_copy):
+                        # log(INFO, str(ci[0].cid in self.drop_cid_list) + " " + ci[0].cid + " " + str(self.drop_cid_list))
+                        if ci[0].cid in self.drop_cid_list:
+                            count += 1
+                            client_instructions.remove(ci)
+                            # log(INFO,
+                            #     str(count) + " (out of " + str(self.drop_client_count) + ") clients dropped: " + ci[0].cid)
+                    if self.drop_client_count != count:
+                        log(INFO, "dropping clients error")
         return client_instructions
 
     def get_client_list_by_time(self):

@@ -12,6 +12,10 @@ import utils
 import warnings
 import wandb
 
+import time
+
+start_time: float
+
 warnings.filterwarnings("ignore")
 torch.set_num_threads(8)
 
@@ -82,7 +86,12 @@ def get_evaluate_fn(model: torch.nn.Module, toy: bool):
         model.load_state_dict(state_dict, strict=True)
 
         loss, accuracy = utils.test(model, valLoader)
-        wandb.log({"centralized_loss": loss, "centralized_accuracy": accuracy, "server_round": server_round})
+        global start_time
+        end_time = time.time()
+        elapsed_time = (end_time - start_time) / 60.0
+        elapsed_minutes = round(elapsed_time, 3)
+        wandb.log({"centralized_loss": loss,
+                   "centralized_accuracy": accuracy, "server_round": server_round, "Time (Minutes)": elapsed_minutes})
         return loss, {"accuracy": accuracy}
 
     return evaluate
@@ -93,6 +102,8 @@ def main():
     1. server-side parameter initialization
     2. server-side parameter evaluation
     """
+    global start_time
+    start_time = time.time()
 
     # Parse command line argument `partition`
     parser = argparse.ArgumentParser(description="Flower")
@@ -133,17 +144,43 @@ def main():
 
         # track hyperparameters and run metadata
         config={
-            "learning_rate": 0.001,
             "architecture": "CNN",
             "dataset": "CIFAR-10",
+            "server_version": "v8",
+            "min_clients": 50,
+            "rounds": 300,
+            "client_selection": "on",
+
+            "client_version": "v8",
             "epochs": 5,
-        }
+            "batch_size": 32,
+            "learning_rate": 0.01,
+            "momentum": 0.9
+        },
+
+        # (str, optional) A longer description of the run
+        # notes='''
+        # [server]
+        # server_version = v8
+        # min_clients = 50
+        # rounds = 300
+        # client_selection = off
+        #
+        # [client]
+        # client_version = v8
+        # local_epochs = 5
+        # batch_size = 32
+        # learning_rate = 0.01
+        # momentum = 0.9
+        # '''
+
+
     )
 
     # Start Flower server for four rounds of federated learning
     fl.server.start_server(
         server_address="0.0.0.0:8080",
-        config=fl.server.ServerConfig(num_rounds=300),
+        config=fl.server.ServerConfig(num_rounds=1000),
         strategy=strategy,
     )
 
