@@ -16,66 +16,35 @@ from tqdm import tqdm
 # #############################################################################
 
 warnings.filterwarnings("ignore", category=UserWarning)
+torch.set_num_threads(2)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+
+# def create_net():
+#     net = Net().to(DEVICE)
+#     state_dict = net.state_dict()
+#     for key in state_dict:
+#         state_dict[key] = torch.randn_like(state_dict[key])
+#     net.load_state_dict(state_dict)
+#     return net
 
 
 class Net(nn.Module):
     """Model (simple CNN adapted from 'PyTorch: A 60 Minute Blitz')"""
 
     def __init__(self) -> None:
-        # super(Net, self).__init__()
-        # self.conv1 = nn.Conv2d(3, 6, 5)
-        # self.pool = nn.MaxPool2d(2, 2)
-        # self.conv2 = nn.Conv2d(6, 16, 5)
-        # self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        # self.fc2 = nn.Linear(120, 84)
-        # self.fc3 = nn.Linear(84, 10)
-
-        # super(Net, self).__init__()
-        # self.conv1 = torch.nn.Conv2d(3, 6, 5)
-        # self.pool = torch.nn.MaxPool2d(2, 2)
-        # self.fc1 = torch.nn.Linear(6 * 14 * 14, 120)
-        # self.fc2 = torch.nn.Linear(120, 84)
-        # self.fc3 = torch.nn.Linear(84, 10)
-
-        # super(Net, self).__init__()
-        # self.conv1 = nn.Conv2d(3, 6, 5)
-        # self.pool = nn.MaxPool2d(2, 2)
-        # self.conv2 = nn.Conv2d(3, 8, 3)
-        # self.fc1 = nn.Linear(8 * 6 * 6, 120)
-        # self.fc2 = nn.Linear(120, 42)
-        # self.fc3 = nn.Linear(42, 10)
-
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(3, 3, 1)
+        self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(3, 8, 1)
-        self.fc1 = nn.Linear(8 * 8 * 8, 60)
-        self.fc2 = nn.Linear(60, 42)
-        self.fc3 = nn.Linear(42, 10)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x = self.pool(F.relu(self.conv1(x)))
-        # x = self.pool(F.relu(self.conv2(x)))
-        # x = x.view(-1, 16 * 5 * 5)
-        # x = F.relu(self.fc1(x))
-        # x = F.relu(self.fc2(x))
-
-        # x = self.pool(F.relu(self.conv1(x)))
-        # x = x.view(-1, 6 * 14 * 14)
-        # x = F.relu(self.fc1(x))
-        # x = F.relu(self.fc2(x))
-        # return self.fc3(x)
-
-        # x = self.pool(F.relu(self.conv1(x)))
-        # x = self.pool(F.relu(self.conv2(x)))
-        # x = x.view(-1, 8 * 6 * 6)
-        # x = F.relu(self.fc1(x))
-        # x = F.relu(self.fc2(x))
-
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 8 * 8 * 8)
+        x = x.view(-1, 16 * 5 * 5)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         return self.fc3(x)
@@ -119,35 +88,43 @@ def load_data():
 # #############################################################################
 
 # Load model and data (simple CNN, CIFAR-10)
-net = Net().to(DEVICE)
+net1 = Net().to(DEVICE)
+
 trainloader, testloader = load_data()
 
 
 # Define Flower client
 class FlowerClient(fl.client.NumPyClient):
+    def __init__(self, net):
+        super().__init__()
+        self.net = net
+
     def get_parameters(self, config):
-        return [val.cpu().numpy() for _, val in net.state_dict().items()]
+        return [val.cpu().numpy() for _, val in self.net.state_dict().items()]
 
     def set_parameters(self, parameters):
-        params_dict = zip(net.state_dict().keys(), parameters)
+        params_dict = zip(self.net.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.tensor(v) for k, v in params_dict})
-        net.load_state_dict(state_dict, strict=True)
+        self.net.load_state_dict(state_dict, strict=True)
 
     def fit(self, parameters, config):
         self.set_parameters(parameters)
-        train(net, trainloader, epochs=1)
+        train(self.net, trainloader, epochs=5)
         return self.get_parameters(config={}), len(trainloader.dataset), {}
 
     def evaluate(self, parameters, config):
         self.set_parameters(parameters)
-        loss, accuracy = test(net, testloader)
+        loss, accuracy = test(self.net, testloader)
         return loss, len(testloader.dataset), {"accuracy": accuracy}
 
+
+bench_client = FlowerClient(net1)
 
 # Start Flower client
 fl.client.start_numpy_client(
     # server_address="192.168.1.248:8080",
-    server_address="host.docker.internal:8080",
-    # server_address="fedops-server-mjh:8080",
-    client=FlowerClient(),
+    # server_address="0.0.0.0:8080",
+    server_address="127.0.0.1:8080",
+    # server_address="10.152.183.171:8080",
+    client=bench_client,
 )

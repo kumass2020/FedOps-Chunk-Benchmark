@@ -38,6 +38,9 @@ from flwr.server.client_proxy import ClientProxy
 from flwr.server.history import History
 from flwr.server.strategy import FedAvg, Strategy
 
+import statistics
+import wandb
+
 FitResultsAndFailures = Tuple[
     List[Tuple[ClientProxy, FitRes]],
     List[Union[Tuple[ClientProxy, FitRes], BaseException]],
@@ -51,12 +54,15 @@ ReconnectResultsAndFailures = Tuple[
     List[Union[Tuple[ClientProxy, DisconnectRes], BaseException]],
 ]
 
+# cid, train_time, comm_time
+client_list_by_time: [[str, float, float]] = []
+
 
 class Server:
     """Flower server."""
 
     def __init__(
-        self, *, client_manager: ClientManager, strategy: Optional[Strategy] = None
+        self, *, client_manager: ClientManager, strategy: Optional[Strategy] = None, drop_cid_list=None
     ) -> None:
         self._client_manager: ClientManager = client_manager
         self.parameters: Parameters = Parameters(
@@ -64,7 +70,12 @@ class Server:
         )
         self.strategy: Strategy = strategy if strategy is not None else FedAvg()
         self.max_workers: Optional[int] = None
+
+        # self.drop_cid_list: list[str] = drop_cid_list
         self.drop_cid_list: list[str] = []
+        self.drop_client_count = 0
+        # global client_list_by_time
+        # client_list_by_time
 
     def set_max_workers(self, max_workers: Optional[int]) -> None:
         """Set the max_workers used by ThreadPoolExecutor."""
@@ -145,15 +156,76 @@ class Server:
         log(INFO, "FL finished in %s", elapsed)
         return history
     
-    def select_client(self):
+    def select_client(self, server_round):
         global client_list_by_time
-        self.drop_cid_list.append(client_list_by_time[-1])
+        execution_time_list = []
+        self.drop_client_count = 0
+
+        if len(client_list_by_time) > 0:
+            for li in client_list_by_time:
+                execution_time_list.append(li[1])
+            median_execution_time = statistics.median(execution_time_list)
+            mad_execution_time = statistics.median([abs(x - median_execution_time) for x in execution_time_list])
+            cut_off = 3
+
+            adaptive_threshold = median_execution_time + cut_off * mad_execution_time
+            log(INFO, "adaptive threshold:" + '{:.4f}'.format(adaptive_threshold))
+            # for i in range(5):
+            #     self.drop_cid_list.append((client_list_by_time[-1])[0])
+            for i, li in enumerate(client_list_by_time):
+                target_cid_time = (client_list_by_time[i])[1]
+                target_cid_whole_time = (client_list_by_time[i])[2]
+                target_cid_comm_time = target_cid_whole_time - target_cid_time
+                submit_time = (client_list_by_time[i])[3]
+                receive_time = (client_list_by_time[i])[4]
+                wandb.log({"server_round": server_round,
+                           "adaptive_threshold": round(adaptive_threshold, 4),
+                           "MAD": mad_execution_time,
+                           "client_number": i,
+                           "client_whole_time": target_cid_whole_time,
+                           "client_train_time": target_cid_time,
+                           "client_comm_time": target_cid_comm_time,
+                           "client_submit_time": submit_time,
+                           "client_receive_time": receive_time,
+                           "client_comm_time_2": submit_time + receive_time})
+                if li[1] > adaptive_threshold:
+                # if True:
+                    target_cid = (client_list_by_time[i])[0]
+
+                    time_difference = target_cid_time - adaptive_threshold
+                    # cutoff = (target_cid_time - adaptive_threshold) / std_execution_time
+
+                    # if time_difference >= 1:
+                    # if self.drop_client_count <= 1:
+                    # if cutoff > 1:
+                    self.drop_client_count += 1
+                    self.drop_cid_list.append(target_cid)
+                    log(INFO, "dropped cid : " + target_cid)
+                    log(INFO,
+                        "time difference to threshold : " + '{:.4f}'.format(target_cid_time - adaptive_threshold))
+            log(INFO, str(self.drop_client_count) + " clients dropped.")
     
     def drop_client(self, client_instructions):
-        for i, ci in enumerate(client_instructions):
-            if ci[0].cid in self.drop_cid_list:
-                del client_instructions[i]
+        client_select = True
+        if client_select:
+            count = 0
+            ci_copy = client_instructions.copy()
+            if self.drop_cid_list is not None:
+                if len(self.drop_cid_list) > 0:
+                    for i, ci in enumerate(ci_copy):
+                        # log(INFO, str(ci[0].cid in self.drop_cid_list) + " " + ci[0].cid + " " + str(self.drop_cid_list))
+                        if ci[0].cid in self.drop_cid_list:
+                            count += 1
+                            client_instructions.remove(ci)
+                            # log(INFO,
+                            #     str(count) + " (out of " + str(self.drop_client_count) + ") clients dropped: " + ci[0].cid)
+                    if self.drop_client_count != count:
+                        log(INFO, "dropping clients error")
         return client_instructions
+
+    def get_client_list_by_time(self):
+        global client_list_by_time
+        return client_list_by_time
 
     def evaluate_round(
         self,
@@ -165,7 +237,7 @@ class Server:
         """Validate current global model on a number of clients."""
 
         # if server_round >= 2:
-        #     self.strategy.configure_evaluate
+            # self.strategy.configure_evaluate
 
         # Get clients and their respective instructions from strategy
         client_instructions = self.strategy.configure_evaluate(
@@ -174,9 +246,10 @@ class Server:
             client_manager=self._client_manager,
         )
         
-        if server_round >= 2:
-            client_instructions = self.drop_client(client_instructions)
-            
+        # if server_round == 2:
+        #     self.select_client()
+        client_instructions = self.drop_client(client_instructions)
+        wandb.log({"evaluate_clients_number": len(client_instructions), "server_round": server_round})
         if not client_instructions:
             log(INFO, "evaluate_round %s: no clients selected, cancel", server_round)
             return None
@@ -231,11 +304,12 @@ class Server:
         )
 
         #############
-        if server_round >= 2:
-            # self.drop_cid_list.append((client_instructions[0])[0].cid)
-            self.select_client()
-            client_instructions = self.drop_client(client_instructions)
+        if server_round == 2:
+        #     # self.drop_cid_list.append((client_instructions[0])[0].cid)
+            self.select_client(server_round)
+        client_instructions = self.drop_client(client_instructions)
 
+        wandb.log({"fit_clients_number": len(client_instructions), "server_round": server_round})
         if not client_instructions:
             log(INFO, "fit_round %s: no clients selected, cancel", server_round)
             return None
@@ -355,11 +429,13 @@ def fit_clients(
     client_list_by_time = []
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        global before_submit_time
+        before_submit_time = timeit.default_timer()
+
         submitted_fs = {
             executor.submit(fit_client, client_proxy, ins, timeout) for client_proxy, ins in client_instructions
         }
-        global client_start_time
-        client_start_time = timeit.default_timer()
+
         finished_fs, _ = concurrent.futures.wait(
             fs=submitted_fs,
             timeout=None,  # Handled in the respective communication stack
@@ -384,17 +460,28 @@ def fit_client(
     client: ClientProxy, ins: FitIns, timeout: Optional[float]
 ) -> Tuple[ClientProxy, FitRes]:
     """Refine parameters on a single client."""
+    global before_submit_time, client_list_by_time
+    # client_phase_time = timeit.default_timer()
+    # elapsed_phase_time = client_phase_time - client_start_time
+    # log(INFO, 'phase_time: ' + '{:.4f}'.format(elapsed_phase_time))
+    # client_start_time = timeit.default_timer()
     fit_res = client.fit(ins, timeout=timeout)
-
-    global client_start_time, client_list_by_time
-    client_list_by_time.append(client.cid)
-    
     client_end_time = timeit.default_timer()
-    elapsed_time = client_end_time - client_start_time
+
+    submit_end_time = float(fit_res.metrics['submit_end_time'])
+    receive_start_time = float(fit_res.metrics['receive_start_time'])
+
+    submit_time = submit_end_time - before_submit_time
     train_time = float(fit_res.metrics['train_time'])
-    log(INFO, "cid: " + client.cid + " - train + comm: " + '{:.4f}'.format(elapsed_time) 
-        + 's - train: ' + '{:.4f}'.format(train_time) + 's')
-    a = fit_res.metrics['train_time']
+    receive_time = client_end_time - receive_start_time
+    elapsed_time = client_end_time - before_submit_time
+
+
+    client_list_by_time.append([client.cid, train_time, elapsed_time, submit_time, receive_time])
+
+    log(INFO, "cid: " + client.cid + ' - train: ' + '{:.4f}'.format(train_time) +
+        "s - train + comm: " + '{:.4f}'.format(elapsed_time) + 's')
+    # a = fit_res.metrics['train_time']
 
     return client, fit_res
 
