@@ -147,17 +147,17 @@ def main():
         config={
             "architecture": "CNN",
             "dataset": "CIFAR-10",
-            "server_version": "v10",
+            "server_version": "v11",
             "min_clients": 50,
             "rounds": 1000,
             "client_selection": "on",
             "threshold": 3,
 
-            "client_version": "v10",
+            "client_version": "v11",
             "epochs": 5,
             "batch_size": 64,
             "learning_rate": 0.001,
-            "momentum": 0.8
+            "momentum": 0.7
         },
 
         # (str, optional) A longer description of the run

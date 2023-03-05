@@ -174,10 +174,13 @@ class Server:
             #     self.drop_cid_list.append((client_list_by_time[-1])[0])
             for i, li in enumerate(client_list_by_time):
                 target_cid_time = (client_list_by_time[i])[1]
-                target_cid_comm_time = (client_list_by_time[i])[2]
+                target_cid_whole_time = (client_list_by_time[i])[2]
+                target_cid_comm_time = target_cid_whole_time - target_cid_time
                 wandb.log({"server_round": server_round,
                            "adaptive_threshold": round(adaptive_threshold, 4),
+                           "MAD": mad_execution_time,
                            "client_number": i,
+                           "client_whole_time": target_cid_whole_time,
                            "client_train_time": target_cid_time,
                            "client_comm_time": target_cid_comm_time})
                 if li[1] > adaptive_threshold:
