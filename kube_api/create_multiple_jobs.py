@@ -1,11 +1,84 @@
 from kubernetes import client, config
 import time
+import numpy as np
+import random
 
 JOB_NAME = "fedops-client-mjh"
 SERVER_JOB_NAME = "fedops-server-mjh"
 service_account_name = "fedops-svc-mjh"
 
-jobs_num = 10
+jobs_num = 50
+
+client_image = "kumass2020/fedops-client:v12"
+server_image = "kumass2020/fedops-server:client50-v12"
+
+client_image_pull_policy = "IfNotPresent"
+server_image_pull_policy = "IfNotPresent"
+
+delay_after_server = 360
+delay_per_client = 0.5
+
+cpu_limits_list: list[int]
+
+
+def get_cpu_distribution():
+    import csv
+
+    # Open the CSV file in read mode
+    with open('ML_ALL_benchmarks.csv', mode='r') as csv_file:
+        # Create a CSV reader object
+        csv_reader = csv.reader(csv_file)
+
+        # Initialize an empty list to hold the data
+        data = []
+
+        # Loop through each row in the CSV file
+        for row in csv_reader:
+            # Extract the value of the second column and append it to the list
+            data.append(row[5])
+
+    # Print the list of data
+    print(data[1:], "\n", len(data[1:]))
+
+    # Convert the list of strings to a list of integers
+    data = [int(x) for x in data[1:]]
+
+    # data = data[1:]
+    mean = sum(data) / len(data)
+
+    new_mean = 1400
+
+    # Scale each value in the list to have a mean of 1400
+    scaled_numbers = [(value - mean) * (new_mean / mean) + new_mean for value in data]
+
+    # Print the scaled list of numbers
+    print(scaled_numbers)
+    print(sum(scaled_numbers) / len(scaled_numbers))
+
+    pod_cpu_limits = random.sample(scaled_numbers, 50)
+
+    return pod_cpu_limits
+
+# def get_cpu_distribution():
+#     # Original CPU core and percentage data
+#     cpu_cores = np.array(
+#         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 26, 28, 32, 36, 44, 48, 56, 64, 128])
+#     percentages = np.array(
+#         [0.15, 9.95, 0.39, 29.51, 0.02, 32.08, 0.02, 19.55, 0.01, 1.91, 0.0, 3.42, 0.0, 1.71, 0.0, 1.06, 0.02, 0.01,
+#          0.0, 0.18, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+#
+#     # Scale down the distribution
+#     scale_factor = 5.947 / 1.4
+#     scaled_cpu_cores = cpu_cores / scale_factor
+#     scaled_percentages = percentages / np.sum(percentages)
+#
+#     # Generate 50 samples from the scaled distribution
+#     num_pods = 50
+#     pod_cpu_limits = np.round(scaled_cpu_cores * 1000).astype(int)
+#     pod_cpu_limits = np.random.choice(pod_cpu_limits, num_pods, p=scaled_percentages)
+#
+#     print(pod_cpu_limits)
+#     return pod_cpu_limits
 
 
 def create_containers():
@@ -16,13 +89,16 @@ def create_containers():
     for i in range(jobs_num):
         container = client.V1Container(
             name=f"fedops-client-{i}",
-            image="kumass2020/fedops-client:no-data",
-            # image_pull_policy="Always",
+            image=client_image,
+            image_pull_policy=client_image_pull_policy,
             # command=["sh", "-c", "mkdir -p /home/ccl/fedops-mjh/mnt"],
             resources=client.V1ResourceRequirements(
-                requests={"cpu": "2000m", "memory": "2Gi"},
-                limits={"cpu": "4000m", "memory": "4Gi"}
+                requests={"cpu": str(cpu_limits_list[i]) + "m", "memory": "1Gi"},
+                limits={"cpu": str(cpu_limits_list[i]) + "m", "memory": "1Gi"}
             ),
+            env=[
+                client.V1EnvVar(name="CLIENT_NUMBER", value=str(i))
+            ]
             # volume_mounts=[client.V1VolumeMount(name="airflow-nfs", mount_path="/mnt/fedops-mjh")]
             # volume_mounts=[
             #     client.V1VolumeMount(
@@ -94,7 +170,8 @@ def create_server_job_object():
     # Configureate Pod template container
     container = client.V1Container(
         name="fedops-server",
-        image="kumass2020/fedops-server:10-5-client",
+        image=server_image,
+        image_pull_policy=server_image_pull_policy,
         # command=["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
         resources=client.V1ResourceRequirements(
             requests={"cpu": "1000m", "memory": "1Gi"},
@@ -197,18 +274,21 @@ def main():
     config.load_kube_config('config_ssh.txt')
     batch_v1 = client.BatchV1Api()
 
+    global cpu_limits_list
+    cpu_limits_list = get_cpu_distribution()
+
     # Create a job object with client-python API. The job we
     # created is same as the `pi-job.yaml` in the /examples folder.
     # job_list: list[client.V1Job] = []
     job = create_server_job_object()
     create_job(batch_v1, job)
-    time.sleep(3)
+    time.sleep(delay_after_server)
     for i in range(jobs_num):
         job = create_job_object(i)
         # job.metadata = client.V1ObjectMeta(name=JOB_NAME + str(i))
         # job_list.append(job)
         create_job(batch_v1, job)
-        time.sleep(0.5)
+        time.sleep(delay_per_client)
 
 
     # create_job(batch_v1, job)
