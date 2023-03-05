@@ -97,7 +97,7 @@ class Net(nn.Module):
 def train(net, trainloader, valloader, epochs, device: str = "cpu"):
     """Train the model on the training set."""
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.8)
     for _ in range(epochs):
         for images, labels in tqdm(trainloader):
             optimizer.zero_grad()
