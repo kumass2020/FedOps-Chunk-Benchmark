@@ -42,7 +42,7 @@ def fit_config(server_round: int):
     config = {
         "batch_size": 64,
         # "local_epochs": 1 if server_round < 2 else 5,
-        "local_epochs": 5
+        "local_epochs": 1
     }
     return config
 
@@ -147,17 +147,18 @@ def main():
         config={
             "architecture": "CNN",
             "dataset": "CIFAR-10",
-            "server_version": "v11",
+            "server_version": "v12",
             "min_clients": 50,
             "rounds": 1000,
             "client_selection": "on",
             "threshold": 3,
 
-            "client_version": "v11",
-            "epochs": 5,
+            "client_version": "v12",
+            "epochs": 1,
             "batch_size": 64,
             "learning_rate": 0.001,
-            "momentum": 0.7
+            "momentum": 0.9,
+            # "test": "True",
         },
 
         # (str, optional) A longer description of the run

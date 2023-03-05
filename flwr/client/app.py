@@ -250,6 +250,7 @@ def _get_parameters(self: Client, ins: GetParametersIns) -> GetParametersRes:
 
 def _fit(self: Client, ins: FitIns) -> FitRes:
     """Refine the provided parameters using the locally held dataset."""
+    submit_end_time = timeit.default_timer()
 
     # Deconstruct FitIns
     parameters: NDArrays = parameters_to_ndarrays(ins.parameters)
@@ -273,9 +274,10 @@ def _fit(self: Client, ins: FitIns) -> FitRes:
     # Return FitRes
     parameters_prime, num_examples, metrics = results
     
-    metrics['train_time'] = '{:.6f}'.format(elapsed_time)
-    
     parameters_prime_proto = ndarrays_to_parameters(parameters_prime)
+    metrics['submit_end_time'] = '{:.6f}'.format(submit_end_time)
+    metrics['train_time'] = '{:.6f}'.format(elapsed_time)
+    metrics['receive_start_time'] = '{:.6f}'.format(timeit.default_timer())
     return FitRes(
         status=Status(code=Code.OK, message="Success"),
         parameters=parameters_prime_proto,

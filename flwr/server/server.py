@@ -176,13 +176,18 @@ class Server:
                 target_cid_time = (client_list_by_time[i])[1]
                 target_cid_whole_time = (client_list_by_time[i])[2]
                 target_cid_comm_time = target_cid_whole_time - target_cid_time
+                submit_time = (client_list_by_time[i])[3]
+                receive_time = (client_list_by_time[i])[4]
                 wandb.log({"server_round": server_round,
                            "adaptive_threshold": round(adaptive_threshold, 4),
                            "MAD": mad_execution_time,
                            "client_number": i,
                            "client_whole_time": target_cid_whole_time,
                            "client_train_time": target_cid_time,
-                           "client_comm_time": target_cid_comm_time})
+                           "client_comm_time": target_cid_comm_time,
+                           "client_submit_time": submit_time,
+                           "client_receive_time": receive_time,
+                           "client_comm_time_2": submit_time + receive_time})
                 if li[1] > adaptive_threshold:
                 # if True:
                     target_cid = (client_list_by_time[i])[0]
@@ -424,11 +429,13 @@ def fit_clients(
     client_list_by_time = []
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        global before_submit_time
+        before_submit_time = timeit.default_timer()
+
         submitted_fs = {
             executor.submit(fit_client, client_proxy, ins, timeout) for client_proxy, ins in client_instructions
         }
-        global client_start_time
-        client_start_time = timeit.default_timer()
+
         finished_fs, _ = concurrent.futures.wait(
             fs=submitted_fs,
             timeout=None,  # Handled in the respective communication stack
@@ -453,18 +460,28 @@ def fit_client(
     client: ClientProxy, ins: FitIns, timeout: Optional[float]
 ) -> Tuple[ClientProxy, FitRes]:
     """Refine parameters on a single client."""
+    global before_submit_time, client_list_by_time
+    # client_phase_time = timeit.default_timer()
+    # elapsed_phase_time = client_phase_time - client_start_time
+    # log(INFO, 'phase_time: ' + '{:.4f}'.format(elapsed_phase_time))
+    # client_start_time = timeit.default_timer()
     fit_res = client.fit(ins, timeout=timeout)
-
-    global client_start_time, client_list_by_time
     client_end_time = timeit.default_timer()
-    elapsed_time = client_end_time - client_start_time
-    train_time = float(fit_res.metrics['train_time'])
 
-    client_list_by_time.append([client.cid, train_time, elapsed_time])
+    submit_end_time = float(fit_res.metrics['submit_end_time'])
+    receive_start_time = float(fit_res.metrics['receive_start_time'])
+
+    submit_time = submit_end_time - before_submit_time
+    train_time = float(fit_res.metrics['train_time'])
+    receive_time = client_end_time - receive_start_time
+    elapsed_time = client_end_time - before_submit_time
+
+
+    client_list_by_time.append([client.cid, train_time, elapsed_time, submit_time, receive_time])
 
     log(INFO, "cid: " + client.cid + ' - train: ' + '{:.4f}'.format(train_time) +
         "s - train + comm: " + '{:.4f}'.format(elapsed_time) + 's')
-    a = fit_res.metrics['train_time']
+    # a = fit_res.metrics['train_time']
 
     return client, fit_res
 
