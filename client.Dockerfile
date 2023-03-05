@@ -3,8 +3,9 @@ WORKDIR /app
 # RUN apk add --no-cache gcc musl-dev linux-headers g++
 # RUN dnf install gcc-c++ python3-devel
 
-RUN apt-get install -y ntpclient
-RUN echo "NTP_CLIENT_SYSTEM_CONF['ntp_servers'] = ['time.google.com']" >> /etc/ntp.conf
+# RUN apk add ntp
+# RUN echo "server time.google.com" >> /etc/ntp.conf
+# RUN ntpdate time.google.com
 
 COPY ./requirements.txt requirements.txt
 #COPY ./requirements_tf.txt requirements.txt
@@ -19,4 +20,5 @@ COPY ./flwr ./flwr
 COPY ./data ./data
 EXPOSE 8080
 # ENTRYPOINT [ "python3", "/app/client.py", "--partition", "$CLIENT_NUMBER" ]
-ENTRYPOINT sh -c 'ntpclient -s -D time.google.com && python3 /app/client.py --partition "$CLIENT_NUMBER"'
+ENTRYPOINT sh -c 'python3 /app/client.py --partition "$CLIENT_NUMBER"'
+# ENTRYPOINT sh -c 'ntpclient -s -D time.google.com && python3 /app/client.py --partition "$CLIENT_NUMBER"'
