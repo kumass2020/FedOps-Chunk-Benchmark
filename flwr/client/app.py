@@ -50,6 +50,8 @@ from .numpy_client import has_fit as numpyclient_has_fit
 from .numpy_client import has_get_parameters as numpyclient_has_get_parameters
 from .numpy_client import has_get_properties as numpyclient_has_get_properties
 
+import ntplib
+
 EXCEPTION_MESSAGE_WRONG_RETURN_TYPE_FIT = """
 NumPyClient.fit did not return a tuple with 3 elements.
 The returned values should have the following type signature:
@@ -250,7 +252,10 @@ def _get_parameters(self: Client, ins: GetParametersIns) -> GetParametersRes:
 
 def _fit(self: Client, ins: FitIns) -> FitRes:
     """Refine the provided parameters using the locally held dataset."""
-    submit_end_time = timeit.default_timer()
+    ntp_client = ntplib.NTPClient()
+    after_submit_response = ntp_client.request('time.bora.net')
+    after_submit_time = after_submit_response.tx_time
+    # submit_end_time = timeit.default_timer()
 
     # Deconstruct FitIns
     parameters: NDArrays = parameters_to_ndarrays(ins.parameters)
@@ -275,9 +280,10 @@ def _fit(self: Client, ins: FitIns) -> FitRes:
     parameters_prime, num_examples, metrics = results
     
     parameters_prime_proto = ndarrays_to_parameters(parameters_prime)
-    metrics['submit_end_time'] = '{:.6f}'.format(submit_end_time)
+    metrics['after_submit_time'] = '{:.6f}'.format(after_submit_time)
     metrics['train_time'] = '{:.6f}'.format(elapsed_time)
-    metrics['receive_start_time'] = '{:.6f}'.format(timeit.default_timer())
+    before_receive_response = ntp_client.request('time.bora.net')
+    metrics['before_receive_time'] = '{:.6f}'.format(before_receive_response.tx_time)
     return FitRes(
         status=Status(code=Code.OK, message="Success"),
         parameters=parameters_prime_proto,

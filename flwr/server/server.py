@@ -40,6 +40,8 @@ from flwr.server.strategy import FedAvg, Strategy
 
 import statistics
 import wandb
+import ntplib
+import datetime
 
 FitResultsAndFailures = Tuple[
     List[Tuple[ClientProxy, FitRes]],
@@ -427,10 +429,13 @@ def fit_clients(
     
     global client_list_by_time
     client_list_by_time = []
-    
+    ntp_client = ntplib.NTPClient()
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         global before_submit_time
-        before_submit_time = timeit.default_timer()
+        before_submit_response = ntp_client.request('time.bora.net')
+        before_submit_time = before_submit_response.tx_time
+        # before_submit_time = timeit.default_timer()
 
         submitted_fs = {
             executor.submit(fit_client, client_proxy, ins, timeout) for client_proxy, ins in client_instructions
@@ -466,16 +471,19 @@ def fit_client(
     # log(INFO, 'phase_time: ' + '{:.4f}'.format(elapsed_phase_time))
     # client_start_time = timeit.default_timer()
     fit_res = client.fit(ins, timeout=timeout)
+    ntp_client = ntplib.NTPClient()
+    after_receive_response = ntp_client.request('time.bora.net')
+    after_receive_time = after_receive_response.tx_time
     client_end_time = timeit.default_timer()
 
-    submit_end_time = float(fit_res.metrics['submit_end_time'])
-    receive_start_time = float(fit_res.metrics['receive_start_time'])
+    after_submit_time = float(fit_res.metrics['after_submit_time'])
+    before_receive_time = float(fit_res.metrics['before_receive_time'])
 
-    submit_time = submit_end_time - before_submit_time
+    submit_time = after_submit_time - before_submit_time
+    # submit_time = datetime.datetime.fromtimestamp(submit_time).strftime('%S.%f')
     train_time = float(fit_res.metrics['train_time'])
-    receive_time = client_end_time - receive_start_time
+    receive_time = after_receive_time - before_receive_time
     elapsed_time = client_end_time - before_submit_time
-
 
     client_list_by_time.append([client.cid, train_time, elapsed_time, submit_time, receive_time])
 
