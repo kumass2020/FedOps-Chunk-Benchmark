@@ -250,10 +250,24 @@ def _get_parameters(self: Client, ins: GetParametersIns) -> GetParametersRes:
     )
 
 
+def get_ntp_time():
+    ntp_client = ntplib.NTPClient()
+    try:
+        try:
+            response = ntp_client.request('time.bora.net')
+        except ntplib.NTPException:
+            response = ntp_client.request('kr.pool.ntp.org')
+            log(INFO, "requested to pool NTP Server")
+    except ntplib.NTPException:
+        response = ntp_client.request('time.google.com')
+        log(INFO, "requested to google NTP Server")
+    return response
+
+
 def _fit(self: Client, ins: FitIns) -> FitRes:
     """Refine the provided parameters using the locally held dataset."""
-    ntp_client = ntplib.NTPClient()
-    after_submit_response = ntp_client.request('time.bora.net')
+
+    after_submit_response = get_ntp_time()
     after_submit_time = after_submit_response.tx_time
     # submit_end_time = timeit.default_timer()
 
@@ -282,7 +296,7 @@ def _fit(self: Client, ins: FitIns) -> FitRes:
     parameters_prime_proto = ndarrays_to_parameters(parameters_prime)
     metrics['after_submit_time'] = '{:.6f}'.format(after_submit_time)
     metrics['train_time'] = '{:.6f}'.format(elapsed_time)
-    before_receive_response = ntp_client.request('time.bora.net')
+    before_receive_response = get_ntp_time()
     metrics['before_receive_time'] = '{:.6f}'.format(before_receive_response.tx_time)
     return FitRes(
         status=Status(code=Code.OK, message="Success"),
