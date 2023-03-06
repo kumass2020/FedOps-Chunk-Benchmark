@@ -204,7 +204,7 @@ class Server:
                     self.drop_cid_list.append(target_cid)
                     log(INFO, "dropped cid : " + target_cid)
                     log(INFO,
-                        "time difference to threshold : " + '{:.4f}'.format(target_cid_time - adaptive_threshold))
+                        "time difference to threshold : " + '{:.4f}'.format(time_difference))
             log(INFO, str(self.drop_client_count) + " clients dropped.")
     
     def drop_client(self, client_instructions):
@@ -471,19 +471,21 @@ def fit_client(
     # log(INFO, 'phase_time: ' + '{:.4f}'.format(elapsed_phase_time))
     # client_start_time = timeit.default_timer()
     fit_res = client.fit(ins, timeout=timeout)
+
     ntp_client = ntplib.NTPClient()
     after_receive_response = ntp_client.request('time.bora.net')
     after_receive_time = after_receive_response.tx_time
-    client_end_time = timeit.default_timer()
+    # client_end_time = timeit.default_timer()
 
     after_submit_time = float(fit_res.metrics['after_submit_time'])
     before_receive_time = float(fit_res.metrics['before_receive_time'])
-
     submit_time = after_submit_time - before_submit_time
+
     # submit_time = datetime.datetime.fromtimestamp(submit_time).strftime('%S.%f')
+
     train_time = float(fit_res.metrics['train_time'])
     receive_time = after_receive_time - before_receive_time
-    elapsed_time = client_end_time - before_submit_time
+    elapsed_time = after_receive_time - before_submit_time
 
     client_list_by_time.append([client.cid, train_time, elapsed_time, submit_time, receive_time])
 

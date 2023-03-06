@@ -40,9 +40,9 @@ def fit_config(server_round: int):
     local epoch, increase to two local epochs afterwards.
     """
     config = {
-        "batch_size": 64,
+        "batch_size": 20,
         # "local_epochs": 1 if server_round < 2 else 5,
-        "local_epochs": 10
+        "local_epochs": 5
     }
     return config
 
@@ -53,7 +53,8 @@ def evaluate_config(server_round: int):
     batches) during rounds one to three, then increase to ten local
     evaluation steps.
     """
-    val_steps = 5 if server_round < 4 else 10
+    # val_steps = 5 if server_round < 4 else 10
+    val_steps = 5
     return {"val_steps": val_steps}
 
 
@@ -147,15 +148,16 @@ def main():
         config={
             "architecture": "CNN",
             "dataset": "CIFAR-10",
-            "server_version": "v13",
+
+            "server_version": "v14",
             "min_clients": 50,
             "rounds": 1000,
             "client_selection": "on",
             "threshold": 3,
 
             "client_version": "v13",
-            "epochs": 10,
-            "batch_size": 64,
+            "epochs": 5,
+            "batch_size": 20,
             "learning_rate": 0.001,
             "momentum": 0.9,
             # "test": "True",
