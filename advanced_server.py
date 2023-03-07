@@ -42,7 +42,8 @@ def fit_config(server_round: int):
     config = {
         "batch_size": 64,
         # "local_epochs": 1 if server_round < 2 else 5,
-        "local_epochs": 5
+        "local_epochs": 5,
+        "server_round": server_round
     }
     return config
 
@@ -128,9 +129,9 @@ def main():
     strategy = fl.server.strategy.FedAvg(
         # fraction_fit=0.2,
         # fraction_evaluate=0.2,
-        min_fit_clients=50,
-        min_evaluate_clients=50,
-        min_available_clients=50,
+        min_fit_clients=3,
+        min_evaluate_clients=3,
+        min_available_clients=3,
         evaluate_fn=get_evaluate_fn(model, args.toy),
         on_fit_config_fn=fit_config,
         on_evaluate_config_fn=evaluate_config,
@@ -149,13 +150,13 @@ def main():
             "architecture": "CNN",
             "dataset": "CIFAR-10",
 
-            "server_version": "v15",
+            "server_version": "v16",
             "min_clients": 50,
             "rounds": 1000,
             "client_selection": "on",
             "threshold": 3,
 
-            "client_version": "v13",
+            "client_version": "v16",
             "epochs": 5,
             "batch_size": 64,
             "learning_rate": 0.001,

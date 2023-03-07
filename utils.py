@@ -40,6 +40,22 @@ def load_partition(idx: int):
     return (train_partition, test_partition)
 
 
+def load_small_partition(idx: int):
+    """Load 1/50th of the training and test data to simulate a partition."""
+    assert idx in range(100)
+    trainset, testset, num_examples = load_data()
+    n_train = int(num_examples["trainset"] / 100)
+    n_test = int(num_examples["testset"] / 100)
+
+    train_partition = torch.utils.data.Subset(
+        trainset, range(idx * n_train, (idx + 1) * n_train)
+    )
+    test_partition = torch.utils.data.Subset(
+        testset, range(idx * n_test, (idx + 1) * n_test)
+    )
+    return (train_partition, test_partition)
+
+
 def replace_classifying_layer(efficientnet_model, num_classes: int = 10):
     """Replaces the final layer of the classifier."""
     num_features = efficientnet_model.classifier.fc.in_features
