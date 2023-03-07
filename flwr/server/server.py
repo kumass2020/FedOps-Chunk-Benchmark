@@ -41,7 +41,6 @@ from flwr.server.strategy import FedAvg, Strategy
 import statistics
 import wandb
 import ntplib
-import datetime
 
 FitResultsAndFailures = Tuple[
     List[Tuple[ClientProxy, FitRes]],
@@ -157,7 +156,7 @@ class Server:
         elapsed = end_time - start_time
         log(INFO, "FL finished in %s", elapsed)
         return history
-    
+
     def select_client(self, server_round):
         global client_list_by_time
         execution_time_list = []
@@ -168,9 +167,9 @@ class Server:
                 execution_time_list.append(li[1])
             median_execution_time = statistics.median(execution_time_list)
             mad_execution_time = statistics.median([abs(x - median_execution_time) for x in execution_time_list])
-            cut_off = 3
+            threshold = 3
 
-            adaptive_threshold = median_execution_time + cut_off * mad_execution_time
+            adaptive_threshold = median_execution_time + threshold * mad_execution_time
             log(INFO, "adaptive threshold:" + '{:.4f}'.format(adaptive_threshold))
             # for i in range(5):
             #     self.drop_cid_list.append((client_list_by_time[-1])[0])
@@ -378,6 +377,20 @@ class Server:
         return get_parameters_res.parameters
 
 
+def get_ntp_time():
+    ntp_client = ntplib.NTPClient()
+    try:
+        try:
+            response = ntp_client.request('time.bora.net')
+        except ntplib.NTPException:
+            response = ntp_client.request('kr.pool.ntp.org')
+            log(INFO, "requested to pool NTP Server")
+    except ntplib.NTPException:
+        response = ntp_client.request('time.google.com')
+        log(INFO, "requested to google NTP Server")
+    return response
+
+
 def reconnect_clients(
     client_instructions: List[Tuple[ClientProxy, ReconnectIns]],
     max_workers: Optional[int],
@@ -429,11 +442,10 @@ def fit_clients(
     
     global client_list_by_time
     client_list_by_time = []
-    ntp_client = ntplib.NTPClient()
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         global before_submit_time
-        before_submit_response = ntp_client.request('time.bora.net')
+        before_submit_response = get_ntp_time()
         before_submit_time = before_submit_response.tx_time
         # before_submit_time = timeit.default_timer()
 
@@ -472,8 +484,7 @@ def fit_client(
     # client_start_time = timeit.default_timer()
     fit_res = client.fit(ins, timeout=timeout)
 
-    ntp_client = ntplib.NTPClient()
-    after_receive_response = ntp_client.request('time.bora.net')
+    after_receive_response = get_ntp_time()
     after_receive_time = after_receive_response.tx_time
     # client_end_time = timeit.default_timer()
 

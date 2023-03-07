@@ -40,7 +40,7 @@ def fit_config(server_round: int):
     local epoch, increase to two local epochs afterwards.
     """
     config = {
-        "batch_size": 20,
+        "batch_size": 64,
         # "local_epochs": 1 if server_round < 2 else 5,
         "local_epochs": 5
     }
@@ -149,7 +149,7 @@ def main():
             "architecture": "CNN",
             "dataset": "CIFAR-10",
 
-            "server_version": "v14",
+            "server_version": "v15",
             "min_clients": 50,
             "rounds": 1000,
             "client_selection": "on",
@@ -157,7 +157,7 @@ def main():
 
             "client_version": "v13",
             "epochs": 5,
-            "batch_size": 20,
+            "batch_size": 64,
             "learning_rate": 0.001,
             "momentum": 0.9,
             # "test": "True",
