@@ -207,7 +207,7 @@ class Server:
             log(INFO, str(self.drop_client_count) + " clients dropped.")
     
     def drop_client(self, client_instructions):
-        client_select = True
+        client_select = False
         if client_select:
             count = 0
             ci_copy = client_instructions.copy()
@@ -378,17 +378,23 @@ class Server:
 
 
 def get_ntp_time():
+    ntp_server_list = [
+        'time.bora.net',
+        'kr.pool.ntp.org',
+        'time.kriss.re.kr',
+        'time.nist.gov',
+        'ntp2.kornet.net',
+        'time.windows.com',
+        'time.google.com'
+    ]
     ntp_client = ntplib.NTPClient()
-    try:
+    for ntp_server in ntp_server_list:
         try:
-            response = ntp_client.request('time.bora.net')
+            response = ntp_client.request(ntp_server)
         except ntplib.NTPException:
-            response = ntp_client.request('kr.pool.ntp.org')
-            log(INFO, "requested to pool NTP Server")
-    except ntplib.NTPException:
-        response = ntp_client.request('time.google.com')
-        log(INFO, "requested to google NTP Server")
+            pass
     return response
+
 
 
 def reconnect_clients(
