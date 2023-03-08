@@ -58,6 +58,8 @@ ReconnectResultsAndFailures = Tuple[
 # cid, train_time, comm_time
 client_list_by_time: [[str, float, float]] = []
 
+global _server_round
+
 
 class Server:
     """Flower server."""
@@ -236,6 +238,8 @@ class Server:
         Tuple[Optional[float], Dict[str, Scalar], EvaluateResultsAndFailures]
     ]:
         """Validate current global model on a number of clients."""
+        global _server_round
+        _server_round = server_round
 
         # if server_round >= 2:
             # self.strategy.configure_evaluate
@@ -293,6 +297,8 @@ class Server:
         Tuple[Optional[Parameters], Dict[str, Scalar], FitResultsAndFailures]
     ]:
         """Perform a single round of federated averaging."""
+        global _server_round
+        _server_round = server_round
 
         # if server_round >= 2:
         #     self.strategy.configure_fit()
@@ -378,21 +384,26 @@ class Server:
 
 
 def get_ntp_time():
-    ntp_server_list = [
-        'time.bora.net',
-        'kr.pool.ntp.org',
-        'time.kriss.re.kr',
-        'time.nist.gov',
-        'ntp2.kornet.net',
-        'time.windows.com',
-        'time.google.com'
-    ]
-    ntp_client = ntplib.NTPClient()
-    for ntp_server in ntp_server_list:
-        try:
-            response = ntp_client.request(ntp_server)
-        except ntplib.NTPException:
-            pass
+    global _server_round
+    response = None
+    if _server_round < 2:
+        ntp_server_list = [
+            'time.bora.net',
+            'kr.pool.ntp.org',
+            'time.kriss.re.kr',
+            'time.nist.gov',
+            'ntp2.kornet.net',
+            'time.windows.com',
+            'time.google.com'
+        ]
+        ntp_client = ntplib.NTPClient()
+        for ntp_server in ntp_server_list:
+            try:
+                response = ntp_client.request(ntp_server, timeout=0.1)
+            except ntplib.NTPException:
+                pass
+    if response is None:
+        return 0.0
     return response
 
 
@@ -450,10 +461,10 @@ def fit_clients(
     client_list_by_time = []
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        global before_submit_time
-        before_submit_response = get_ntp_time()
-        before_submit_time = before_submit_response.tx_time
-        # before_submit_time = timeit.default_timer()
+        global before_submit_time, before_submit_timer
+        # before_submit_response = get_ntp_time()
+        before_submit_time = get_ntp_time()
+        before_submit_timer = timeit.default_timer()
 
         submitted_fs = {
             executor.submit(fit_client, client_proxy, ins, timeout) for client_proxy, ins in client_instructions
@@ -483,27 +494,31 @@ def fit_client(
     client: ClientProxy, ins: FitIns, timeout: Optional[float]
 ) -> Tuple[ClientProxy, FitRes]:
     """Refine parameters on a single client."""
-    global before_submit_time, client_list_by_time
+    global before_submit_time, before_submit_timer, client_list_by_time, _server_round
     # client_phase_time = timeit.default_timer()
     # elapsed_phase_time = client_phase_time - client_start_time
     # log(INFO, 'phase_time: ' + '{:.4f}'.format(elapsed_phase_time))
     # client_start_time = timeit.default_timer()
     fit_res = client.fit(ins, timeout=timeout)
+    if _server_round < 2:
 
-    after_receive_response = get_ntp_time()
-    after_receive_time = after_receive_response.tx_time
-    # client_end_time = timeit.default_timer()
+        # after_receive_response = get_ntp_time()
+        after_receive_time = get_ntp_time()
 
-    after_submit_time = float(fit_res.metrics['after_submit_time'])
-    before_receive_time = float(fit_res.metrics['before_receive_time'])
-    submit_time = after_submit_time - before_submit_time
+        after_submit_time = float(fit_res.metrics['after_submit_time'])
+        before_receive_time = float(fit_res.metrics['before_receive_time'])
+        submit_time = after_submit_time - before_submit_time
 
-    # submit_time = datetime.datetime.fromtimestamp(submit_time).strftime('%S.%f')
+        # submit_time = datetime.datetime.fromtimestamp(submit_time).strftime('%S.%f')
+
+        receive_time = after_receive_time - before_receive_time
+        elapsed_time = after_receive_time - before_submit_time
+    else:
+        after_receive_timer = timeit.default_timer()
+        elapsed_time = after_receive_timer - before_submit_timer
+        submit_time = receive_time = 0.0
 
     train_time = float(fit_res.metrics['train_time'])
-    receive_time = after_receive_time - before_receive_time
-    elapsed_time = after_receive_time - before_submit_time
-
     client_list_by_time.append([client.cid, train_time, elapsed_time, submit_time, receive_time])
 
     log(INFO, "cid: " + client.cid + ' - train: ' + '{:.4f}'.format(train_time) +
