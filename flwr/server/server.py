@@ -59,6 +59,7 @@ ReconnectResultsAndFailures = Tuple[
 client_list_by_time: [[str, float, float]] = []
 
 global _server_round
+_server_round = 0
 
 
 class Server:
@@ -404,7 +405,7 @@ def get_ntp_time():
                 pass
     if response is None:
         return 0.0
-    return response
+    return response.tx_time
 
 
 
