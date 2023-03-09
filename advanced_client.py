@@ -47,9 +47,9 @@ class CifarClient(fl.client.NumPyClient):
         # batch_size = 64
         # epochs = 5
 
-        if server_round == 2:
-            global partition_num
-            self.trainset, self.testset = utils.load_partition(partition_num)
+        # if server_round == 2:
+        #     global partition_num
+        #     self.trainset, self.testset = utils.load_partition(partition_num)
 
 
         n_valset = int(len(self.trainset) * self.validation_split)
@@ -151,7 +151,7 @@ def main() -> None:
         global partition_num
         partition_num = args.partition
         # Load a subset of CIFAR-10 to simulate the local data partition
-        trainset, testset = utils.load_small_partition(partition_num)
+        trainset, testset = utils.load_partition(partition_num)
 
         if args.toy:
             trainset = torch.utils.data.Subset(trainset, range(10))
