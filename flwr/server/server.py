@@ -170,7 +170,7 @@ class Server:
                 execution_time_list.append(li[1])
             median_execution_time = statistics.median(execution_time_list)
             mad_execution_time = statistics.median([abs(x - median_execution_time) for x in execution_time_list])
-            threshold = 3
+            threshold = 4
 
             adaptive_threshold = median_execution_time + threshold * mad_execution_time
             log(INFO, "adaptive threshold:" + '{:.4f}'.format(adaptive_threshold))
@@ -210,7 +210,7 @@ class Server:
             log(INFO, str(self.drop_client_count) + " clients dropped.")
     
     def drop_client(self, client_instructions):
-        client_select = False
+        client_select = True
         if client_select:
             count = 0
             ci_copy = client_instructions.copy()

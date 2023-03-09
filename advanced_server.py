@@ -155,7 +155,7 @@ def main():
             "architecture": "CNN",
             "dataset": "CIFAR-10",
 
-            "server_version": "v18",
+            "server_version": "v20",
             "min_clients": 50,
             "rounds": 1000,
             "client_selection": "off",
