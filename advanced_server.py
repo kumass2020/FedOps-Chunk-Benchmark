@@ -42,7 +42,8 @@ def fit_config(server_round: int):
     config = {
         "batch_size": 64,
         # "local_epochs": 1 if server_round < 2 else 5,
-        "local_epochs": 1
+        "local_epochs": 5,
+        "server_round": server_round
     }
     return config
 
@@ -53,7 +54,8 @@ def evaluate_config(server_round: int):
     batches) during rounds one to three, then increase to ten local
     evaluation steps.
     """
-    val_steps = 5 if server_round < 4 else 10
+    # val_steps = 5 if server_round < 4 else 10
+    val_steps = 5
     return {"val_steps": val_steps}
 
 
@@ -127,9 +129,14 @@ def main():
     strategy = fl.server.strategy.FedAvg(
         # fraction_fit=0.2,
         # fraction_evaluate=0.2,
+
         min_fit_clients=50,
         min_evaluate_clients=50,
         min_available_clients=50,
+        # min_fit_clients=3,
+        # min_evaluate_clients=3,
+        # min_available_clients=3,
+
         evaluate_fn=get_evaluate_fn(model, args.toy),
         on_fit_config_fn=fit_config,
         on_evaluate_config_fn=evaluate_config,
@@ -147,14 +154,15 @@ def main():
         config={
             "architecture": "CNN",
             "dataset": "CIFAR-10",
-            "server_version": "v12",
+
+            "server_version": "v24",
             "min_clients": 50,
             "rounds": 1000,
-            "client_selection": "on",
-            "threshold": 3,
+            "client_selection": "off",
+            "threshold": 7,
 
-            "client_version": "v12",
-            "epochs": 1,
+            "client_version": "v23",
+            "epochs": 5,
             "batch_size": 64,
             "learning_rate": 0.001,
             "momentum": 0.9,
@@ -177,29 +185,29 @@ def main():
         # momentum = 0.9
         # '''
 
-        notes='''
-            def __init__(self):
-                super(Net, self).__init__()
-                self.conv1 = nn.Conv2d(3, 32, 3, padding=1)
-                self.bn1 = nn.BatchNorm2d(32)
-                self.conv2 = nn.Conv2d(32, 64, 3, padding=1)
-                self.bn2 = nn.BatchNorm2d(64)
-                self.conv3 = nn.Conv2d(64, 128, 3, padding=1)
-                self.bn3 = nn.BatchNorm2d(128)
-                self.fc1 = nn.Linear(128 * 4 * 4, 512)
-                self.fc2 = nn.Linear(512, 10)
-
-            def forward(self, x):
-                x = F.relu(self.bn1(self.conv1(x)))
-                x = F.relu(self.bn2(self.conv2(x)))
-                x = F.relu(self.bn3(self.conv3(x)))
-                x = F.max_pool2d(x, 2)
-                x = x.view(-1, 128 * 4 * 4)
-                x = F.relu(self.fc1(x))
-                x = F.dropout(x, training=self.training)
-                x = self.fc2(x)
-                return x
-        '''
+        # notes='''
+        #     def __init__(self):
+        #         super(Net, self).__init__()
+        #         self.conv1 = nn.Conv2d(3, 32, 3, padding=1)
+        #         self.bn1 = nn.BatchNorm2d(32)
+        #         self.conv2 = nn.Conv2d(32, 64, 3, padding=1)
+        #         self.bn2 = nn.BatchNorm2d(64)
+        #         self.conv3 = nn.Conv2d(64, 128, 3, padding=1)
+        #         self.bn3 = nn.BatchNorm2d(128)
+        #         self.fc1 = nn.Linear(128 * 4 * 4, 512)
+        #         self.fc2 = nn.Linear(512, 10)
+        #
+        #     def forward(self, x):
+        #         x = F.relu(self.bn1(self.conv1(x)))
+        #         x = F.relu(self.bn2(self.conv2(x)))
+        #         x = F.relu(self.bn3(self.conv3(x)))
+        #         x = F.max_pool2d(x, 2)
+        #         x = x.view(-1, 128 * 4 * 4)
+        #         x = F.relu(self.fc1(x))
+        #         x = F.dropout(x, training=self.training)
+        #         x = self.fc2(x)
+        #         return x
+        # '''
 
 
     )
@@ -207,7 +215,10 @@ def main():
     # Start Flower server for four rounds of federated learning
     fl.server.start_server(
         server_address="0.0.0.0:8080",
+
         config=fl.server.ServerConfig(num_rounds=1000),
+        # config=fl.server.ServerConfig(num_rounds=3),
+
         strategy=strategy,
     )
 

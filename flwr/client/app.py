@@ -13,8 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 """Flower client app."""
-
-
+import socket
 import time, timeit
 from logging import INFO
 from typing import Callable, Dict, Optional, Union
@@ -49,6 +48,8 @@ from .numpy_client import has_evaluate as numpyclient_has_evaluate
 from .numpy_client import has_fit as numpyclient_has_fit
 from .numpy_client import has_get_parameters as numpyclient_has_get_parameters
 from .numpy_client import has_get_properties as numpyclient_has_get_properties
+
+import ntplib
 
 EXCEPTION_MESSAGE_WRONG_RETURN_TYPE_FIT = """
 NumPyClient.fit did not return a tuple with 3 elements.
@@ -248,9 +249,52 @@ def _get_parameters(self: Client, ins: GetParametersIns) -> GetParametersRes:
     )
 
 
+def get_ntp_time():
+    global count
+    if count <= 3:
+        ntp_server_list = [
+            'time.bora.net',
+            'kr.pool.ntp.org',
+            'time.kriss.re.kr',
+            'time.nist.gov',
+            'ntp2.kornet.net',
+            'time.windows.com',
+            'time.google.com'
+        ]
+        ntp_client = ntplib.NTPClient()
+        for ntp_server in ntp_server_list:
+            try:
+                response = ntp_client.request(ntp_server)
+            except ntplib.NTPException:
+                pass
+            except socket.gaierror:
+                log(INFO, "NTP socket error: " + ntp_server)
+                pass
+        return response.tx_time
+    else:
+        return 0.0
+
+    # try:
+    #     try:
+    #         response = ntp_client.request('time.bora.net')
+    #     except ntplib.NTPException:
+    #         response = ntp_client.request('kr.pool.ntp.org')
+    #         log(INFO, "requested to pool NTP Server")
+    # except ntplib.NTPException:
+    #     response = ntp_client.request('time.google.com')
+    #     log(INFO, "requested to google NTP Server")
+    # return response
+
+count = 0
+
 def _fit(self: Client, ins: FitIns) -> FitRes:
     """Refine the provided parameters using the locally held dataset."""
-    submit_end_time = timeit.default_timer()
+
+    # after_submit_response = get_ntp_time()
+    after_submit_time = get_ntp_time()
+    global count
+    count += 1
+    # submit_end_time = timeit.default_timer()
 
     # Deconstruct FitIns
     parameters: NDArrays = parameters_to_ndarrays(ins.parameters)
@@ -275,9 +319,10 @@ def _fit(self: Client, ins: FitIns) -> FitRes:
     parameters_prime, num_examples, metrics = results
     
     parameters_prime_proto = ndarrays_to_parameters(parameters_prime)
-    metrics['submit_end_time'] = '{:.6f}'.format(submit_end_time)
+    metrics['after_submit_time'] = '{:.6f}'.format(after_submit_time)
     metrics['train_time'] = '{:.6f}'.format(elapsed_time)
-    metrics['receive_start_time'] = '{:.6f}'.format(timeit.default_timer())
+    # before_receive_response = get_ntp_time()
+    metrics['before_receive_time'] = '{:.6f}'.format(get_ntp_time())
     return FitRes(
         status=Status(code=Code.OK, message="Success"),
         parameters=parameters_prime_proto,
