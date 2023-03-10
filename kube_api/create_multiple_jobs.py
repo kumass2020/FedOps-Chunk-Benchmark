@@ -9,13 +9,16 @@ service_account_name = "fedops-svc-mjh"
 
 jobs_num = 50
 
-client_image = "kumass2020/fedops-client:v12"
-server_image = "kumass2020/fedops-server:client50-v12"
+client_image = "kumass2020/fedops-client:v23"
+server_image = "kumass2020/fedops-server:client50-v24"
 
-client_image_pull_policy = "IfNotPresent"
-server_image_pull_policy = "IfNotPresent"
+# client_image_pull_policy = "IfNotPresent"
+# server_image_pull_policy = "IfNotPresent"
+client_image_pull_policy = "Always"
+server_image_pull_policy = "Always"
 
-delay_after_server = 360
+delay_after_server = 480
+# delay_after_server = 30
 delay_per_client = 0.5
 
 cpu_limits_list: list[int]
@@ -38,7 +41,7 @@ def get_cpu_distribution():
             data.append(row[5])
 
     # Print the list of data
-    print(data[1:], "\n", len(data[1:]))
+    # print(data[1:], "\n", len(data[1:]))
 
     # Convert the list of strings to a list of integers
     data = [int(x) for x in data[1:]]
@@ -55,7 +58,24 @@ def get_cpu_distribution():
     print(scaled_numbers)
     print(sum(scaled_numbers) / len(scaled_numbers))
 
-    pod_cpu_limits = random.sample(scaled_numbers, 50)
+    X = scaled_numbers
+    # X = [np.random.normal(loc=0, scale=1) for i in range(188)]
+
+    # Convert the list to an ndarray
+    X = np.array(X)
+
+    # Calculate the histogram of the original data
+    hist, bins = np.histogram(X, bins=100)
+
+    # Compute the probability of each bin being chosen
+    prob = hist / len(X)
+
+    # Sample 50 elements with replacement based on the probability of each bin
+    X_sampled = np.random.choice(bins[:-1], size=50, replace=True, p=prob)
+
+    # pod_cpu_limits = random.sample(scaled_numbers, 50)
+    pod_cpu_limits = [int(x) for x in X_sampled]
+    print(pod_cpu_limits)
 
     return pod_cpu_limits
 
