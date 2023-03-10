@@ -155,11 +155,11 @@ def main():
             "architecture": "CNN",
             "dataset": "CIFAR-10",
 
-            "server_version": "v23",
+            "server_version": "v24",
             "min_clients": 50,
             "rounds": 1000,
             "client_selection": "off",
-            "threshold": 5,
+            "threshold": 7,
 
             "client_version": "v23",
             "epochs": 5,
