@@ -159,7 +159,7 @@ def main():
             "min_clients": 50,
             "rounds": 1000,
             "client_selection": "off",
-            "threshold": 7,
+            "threshold": 3,
 
             "client_version": "v23",
             "epochs": 5,
