@@ -10,7 +10,7 @@ service_account_name = "fedops-svc-mjh"
 jobs_num = 50
 
 client_image = "kumass2020/fedops-client:v23"
-server_image = "kumass2020/fedops-server:client50-v24"
+server_image = "kumass2020/fedops-server:client50-v25"
 
 # client_image_pull_policy = "IfNotPresent"
 # server_image_pull_policy = "IfNotPresent"

@@ -210,7 +210,7 @@ class Server:
             log(INFO, str(self.drop_client_count) + " clients dropped.")
     
     def drop_client(self, client_instructions):
-        client_select = True
+        client_select = False
         if client_select:
             count = 0
             ci_copy = client_instructions.copy()
