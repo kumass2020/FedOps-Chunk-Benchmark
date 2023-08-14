@@ -124,7 +124,7 @@ bench_client = FlowerClient(net1)
 fl.client.start_numpy_client(
     # server_address="192.168.1.248:8080",
     # server_address="0.0.0.0:8080",
-    server_address="127.0.0.1:8080",
+    server_address="127.0.0.1:8080/fl",
     # server_address="10.152.183.171:8080",
     client=bench_client,
 )

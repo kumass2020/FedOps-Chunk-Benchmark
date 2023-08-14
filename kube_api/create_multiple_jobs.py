@@ -17,8 +17,8 @@ server_image = "kumass2020/fedops-server:client50-v24"
 client_image_pull_policy = "Always"
 server_image_pull_policy = "Always"
 
-delay_after_server = 480
-# delay_after_server = 30
+# delay_after_server = 540
+delay_after_server = 10
 delay_per_client = 0.5
 
 cpu_limits_list: list[int]

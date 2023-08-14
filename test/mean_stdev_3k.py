@@ -39,7 +39,7 @@ comm_cost_bytes_mean = statistics.mean(comm_cost)
 comm_cost_bytes_stdev = statistics.stdev(comm_cost)
 print(comm_cost_bytes_mean, comm_cost_bytes_stdev)
 
-dropped_proportion = [11/50, 11/50, 14/50]
+dropped_proportion = [7/50, 11/50, 11/50]
 dropped_proportion_mean = statistics.mean(dropped_proportion)
 dropped_proportion_stdev = statistics.stdev(dropped_proportion)
 print(dropped_proportion_mean, dropped_proportion_stdev)
