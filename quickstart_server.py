@@ -2,6 +2,7 @@ from typing import List, Tuple
 
 import flwr as fl
 from flwr.common import Metrics
+import wandb
 
 
 # Define metric aggregation function
@@ -17,14 +18,21 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
 # Define strategy
 strategy = fl.server.strategy.FedAvg(
     evaluate_metrics_aggregation_fn=weighted_average,
-    min_fit_clients=3,
-    min_evaluate_clients=3,
-    min_available_clients=3,
+    min_fit_clients=2,
+    min_evaluate_clients=2,
+    min_available_clients=2,
+)
+
+# start a new wandb run to track this script
+wandb.init(
+    entity="hoho",
+    # set the wandb project where this run will be logged
+    project="fedops-loss-map",
 )
 
 # Start Flower server
 fl.server.start_server(
     server_address="0.0.0.0:8080",
-    config=fl.server.ServerConfig(num_rounds=200),
+    config=fl.server.ServerConfig(num_rounds=5),
     strategy=strategy,
 )

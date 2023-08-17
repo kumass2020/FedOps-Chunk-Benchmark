@@ -142,5 +142,5 @@ kube_api/config.txt
 #kube_api/config_ssh.txt
 #simulation_pytorch
 wandb/
-#flwr/
+#flwr2/
 #flwr/
