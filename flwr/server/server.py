@@ -80,6 +80,7 @@ class Server:
         self.drop_client_count = 0
         # global client_list_by_time
         # client_list_by_time
+        self.loss_list = []
 
     def set_max_workers(self, max_workers: Optional[int]) -> None:
         """Set the max_workers used by ThreadPoolExecutor."""
@@ -286,6 +287,12 @@ class Server:
             Optional[float],
             Dict[str, Scalar],
         ] = self.strategy.aggregate_evaluate(server_round, results, failures)
+
+        for result in results:
+            self.loss_list.append((server_round, result[0].cid, result[1].loss))
+
+        if server_round == 10:
+            log(INFO, self.loss_list)
 
         loss_aggregated, metrics_aggregated = aggregated_result
         return loss_aggregated, metrics_aggregated, (results, failures)
