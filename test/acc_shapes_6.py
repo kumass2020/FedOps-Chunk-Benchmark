@@ -20,8 +20,8 @@ def plot_with_custom_inset(filepath, xlim_inset, ylim_inset, inset_position, axi
     fig, ax = plt.subplots()
 
     marker_styles = ['o', 's', '^', 'D']
-    marker_size = 10
-    marker_size_in = 8
+    marker_size = 8
+    marker_size_in = 6
 
     # Line plots with zorder=1
     ax.plot(x, t0, label='Baseline FedAvg', zorder=1, marker=marker_styles[0], markevery=[-1])
@@ -29,19 +29,19 @@ def plot_with_custom_inset(filepath, xlim_inset, ylim_inset, inset_position, axi
     ax.plot(x, t5, label='FedAvg + CAT(k=5)', zorder=1, marker=marker_styles[2], markevery=[-1])
     ax.plot(x, t7, label='FedAvg + CAT(k=7)', zorder=1, marker=marker_styles[3], markevery=[-1])
 
-    # Calculate the first visible x-coordinate
-    visible_xs = [i for i, y in enumerate(t0) if 0.6 <= y <= 1.0]
-    first_visible_x = visible_xs[0] if visible_xs else x[0]
-
-    # Markers with zorder=5 to make them appear above the graph
-    ax.scatter(first_visible_x, 0.6, marker=marker_styles[0], color=ax.lines[0].get_color(), s=marker_size ** 2,
-               zorder=5)
-    ax.scatter(first_visible_x, 0.6, marker=marker_styles[1], color=ax.lines[1].get_color(), s=marker_size ** 2,
-               zorder=5)
-    ax.scatter(first_visible_x, 0.6, marker=marker_styles[2], color=ax.lines[2].get_color(), s=marker_size ** 2,
-               zorder=5)
-    ax.scatter(first_visible_x, 0.6, marker=marker_styles[3], color=ax.lines[3].get_color(), s=marker_size ** 2,
-               zorder=5)
+    # # Calculate the first visible x-coordinate
+    # visible_xs = [i for i, y in enumerate(t0) if 0.6 <= y <= 1.0]
+    # first_visible_x = visible_xs[0] if visible_xs else x[0]
+    #
+    # # Markers with zorder=5 to make them appear above the graph
+    # ax.scatter(first_visible_x, 0.6, marker=marker_styles[0], color=ax.lines[0].get_color(), s=marker_size ** 2,
+    #            zorder=5)
+    # ax.scatter(first_visible_x, 0.6, marker=marker_styles[1], color=ax.lines[1].get_color(), s=marker_size ** 2,
+    #            zorder=5)
+    # ax.scatter(first_visible_x, 0.6, marker=marker_styles[2], color=ax.lines[2].get_color(), s=marker_size ** 2,
+    #            zorder=5)
+    # ax.scatter(first_visible_x, 0.6, marker=marker_styles[3], color=ax.lines[3].get_color(), s=marker_size ** 2,
+    #            zorder=5)
 
     ax.scatter(x[-1], t0[-1], marker=marker_styles[0], color=ax.lines[0].get_color(), s=marker_size ** 2, zorder=5)
     ax.scatter(x[-1], t3[-1], marker=marker_styles[1], color=ax.lines[1].get_color(), s=marker_size ** 2, zorder=5)
@@ -79,18 +79,20 @@ def plot_with_custom_inset(filepath, xlim_inset, ylim_inset, inset_position, axi
     # Add rectangle in the main plot to indicate the zoomed area
     mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5")
 
-    ax.set_xlabel('Communications Rounds', fontsize=16)
+    ax.set_xlabel('Communication Rounds', fontsize=16)
     ax.set_ylabel('Accuracy', fontsize=16)
 
     # Legends with line and marker
     ax.legend(loc='lower right', fontsize=11)
     ax.tick_params(labelsize=12)
 
+    plt.savefig('acc.png', dpi=600)
+
     plt.show()
 
 # Example usage
 filepath = 'wandb_export_2023-03-23T20_48_33.549+09_00.csv'
-xlim_inset = [850, 950]
+xlim_inset = [900, 950]
 ylim_inset = [0.9, 0.93]
 inset_position = [0.1, 0.65, 0.35, 0.3]
 axins_markers = [874, 921, 953]  # List of rounds you want to mark on axins
