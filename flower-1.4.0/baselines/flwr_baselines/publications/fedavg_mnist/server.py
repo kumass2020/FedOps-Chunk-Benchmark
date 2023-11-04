@@ -59,7 +59,14 @@ def main(cfg: DictConfig) -> None:
     #     strategy=strategy,
     # )
 
-    fl.client.start_client(server_address="127.0.0.1:8080", client=client)
+    # Start Flower server for four rounds of federated learning
+    fl.server.start_server(
+        server_address="0.0.0.0:8080",
+        # client_fn=client_fn,
+        # num_clients=cfg.num_clients,
+        config=fl.server.ServerConfig(num_rounds=cfg.num_rounds),
+        strategy=strategy,
+    )
 
     # file_suffix: str = (
     #     f"{'_iid' if cfg.iid else ''}"
