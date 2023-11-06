@@ -189,7 +189,7 @@ def start_simulation(  # pylint: disable=too-many-arguments
         client_proxy = RayClientProxy(
             client_fn=client_fn,
             cid=cid,
-            resources=resources,
+            resources={"num_cpus": 0.1},
         )
         initialized_server.client_manager().register(client=client_proxy)
 
