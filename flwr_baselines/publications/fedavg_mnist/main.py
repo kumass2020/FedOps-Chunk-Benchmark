@@ -1,11 +1,5 @@
 """Runs CNN federated learning for MNIST dataset."""
 
-import sys
-sys.path.append("../../../../../../")
-sys.path.append("../../../../")
-sys.path.append("../../../")
-sys.path.append("../../")
-sys.path.append("../")
 
 from pathlib import Path
 
@@ -51,43 +45,34 @@ def main(cfg: DictConfig) -> None:
         evaluate_metrics_aggregation_fn=utils.weighted_average,
     )
 
-    # # Start simulation
-    # history = fl.simulation.start_simulation(
-    #     client_fn=client_fn,
-    #     num_clients=cfg.num_clients,
-    #     config=fl.server.ServerConfig(num_rounds=cfg.num_rounds),
-    #     strategy=strategy,
-    # )
-
-    # Start Flower server for four rounds of federated learning
-    fl.server.start_server(
-        server_address="0.0.0.0:8080",
-        # client_fn=client_fn,
-        # num_clients=cfg.num_clients,
+    # Start simulation
+    history = fl.simulation.start_simulation(
+        client_fn=client_fn,
+        num_clients=cfg.num_clients,
         config=fl.server.ServerConfig(num_rounds=cfg.num_rounds),
         strategy=strategy,
     )
 
-    # file_suffix: str = (
-    #     f"{'_iid' if cfg.iid else ''}"
-    #     f"{'_balanced' if cfg.balance else ''}"
-    #     f"_C={cfg.num_clients}"
-    #     f"_B={cfg.batch_size}"
-    #     f"_E={cfg.num_epochs}"
-    #     f"_R={cfg.num_rounds}"
-    # )
-    #
-    # np.save(
-    #     Path(cfg.save_path) / Path(f"hist{file_suffix}"),
-    #     history,  # type: ignore
-    # )
-    #
-    # utils.plot_metric_from_history(
-    #     history,
-    #     cfg.save_path,
-    #     cfg.expected_maximum,
-    #     file_suffix,
-    # )
+    file_suffix: str = (
+        f"{'_iid' if cfg.iid else ''}"
+        f"{'_balanced' if cfg.balance else ''}"
+        f"_C={cfg.num_clients}"
+        f"_B={cfg.batch_size}"
+        f"_E={cfg.num_epochs}"
+        f"_R={cfg.num_rounds}"
+    )
+
+    np.save(
+        Path(cfg.save_path) / Path(f"hist{file_suffix}"),
+        history,  # type: ignore
+    )
+
+    utils.plot_metric_from_history(
+        history,
+        cfg.save_path,
+        cfg.expected_maximum,
+        file_suffix,
+    )
 
 
 if __name__ == "__main__":
