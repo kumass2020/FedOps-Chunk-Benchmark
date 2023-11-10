@@ -20,6 +20,7 @@ from typing import Dict, List, Tuple
 
 from flwr.common.typing import Scalar
 
+import wandb
 
 class History:
     """History class for training and/or evaluation metrics collection."""

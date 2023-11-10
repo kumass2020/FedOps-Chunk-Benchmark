@@ -87,9 +87,10 @@ class ClientManager(ABC):
 class SimpleClientManager(ClientManager):
     """Provides a pool of available clients."""
 
-    def __init__(self) -> None:
+    def __init__(self, is_random=1) -> None:
         self.clients: Dict[str, ClientProxy] = {}
         self._cv = threading.Condition()
+        self.is_random = is_random
 
     def __len__(self) -> int:
         return len(self.clients)
@@ -202,5 +203,5 @@ class SimpleClientManager(ClientManager):
                 sampled_cids = [available_cids[1]]
             else:
                 sampled_cids = random.sample(available_cids, 1)
-                
+
         return [self.clients[cid] for cid in sampled_cids]
