@@ -287,14 +287,67 @@ def _get_parameters(self: Client, ins: GetParametersIns) -> GetParametersRes:
     )
 
 
+def get_ntp_time():
+    import ntplib
+    import socket
+    global count
+    if count <= 3:
+        ntp_server_list = [
+            'time.bora.net',
+            'kr.pool.ntp.org',
+            'time.kriss.re.kr',
+            'time.nist.gov',
+            'ntp2.kornet.net',
+            'time.windows.com',
+            'time.google.com'
+        ]
+        ntp_client = ntplib.NTPClient()
+        for ntp_server in ntp_server_list:
+            try:
+                response = ntp_client.request(ntp_server)
+            except ntplib.NTPException:
+                pass
+            except socket.gaierror:
+                log(INFO, "NTP socket error: " + ntp_server)
+                pass
+        return response.tx_time
+    else:
+        return 0.0
+
+    # try:
+    #     try:
+    #         response = ntp_client.request('time.bora.net')
+    #     except ntplib.NTPException:
+    #         response = ntp_client.request('kr.pool.ntp.org')
+    #         log(INFO, "requested to pool NTP Server")
+    # except ntplib.NTPException:
+    #     response = ntp_client.request('time.google.com')
+    #     log(INFO, "requested to google NTP Server")
+    # return response
+
+count = 0
+
+
 def _fit(self: Client, ins: FitIns) -> FitRes:
     """Refine the provided parameters using the locally held dataset."""
+
+    # after_submit_response = get_ntp_time()
+    after_submit_time = get_ntp_time()
+    global count
+    count += 1
+    # submit_end_time = timeit.default_timer()
 
     # Deconstruct FitIns
     parameters: NDArrays = parameters_to_ndarrays(ins.parameters)
 
+    client_start_time = timeit.default_timer()
+
     # Train
     results = self.numpy_client.fit(parameters, ins.config)  # type: ignore
+
+    client_end_time = timeit.default_timer()
+    elapsed_time = client_end_time - client_start_time
+
     if not (
         len(results) == 3
         and isinstance(results[0], list)
@@ -306,6 +359,10 @@ def _fit(self: Client, ins: FitIns) -> FitRes:
     # Return FitRes
     parameters_prime, num_examples, metrics = results
     parameters_prime_proto = ndarrays_to_parameters(parameters_prime)
+    metrics['after_submit_time'] = '{:.6f}'.format(after_submit_time)
+    metrics['train_time'] = '{:.6f}'.format(elapsed_time)
+    # before_receive_response = get_ntp_time()
+    metrics['before_receive_time'] = '{:.6f}'.format(get_ntp_time())
     return FitRes(
         status=Status(code=Code.OK, message="Success"),
         parameters=parameters_prime_proto,

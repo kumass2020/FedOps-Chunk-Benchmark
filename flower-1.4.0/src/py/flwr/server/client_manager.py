@@ -195,5 +195,12 @@ class SimpleClientManager(ClientManager):
             )
             return []
 
-        sampled_cids = random.sample(available_cids, num_clients)
+        if self.is_random == 1:
+            sampled_cids = random.sample(available_cids, num_clients)
+        else:
+            if len(available_cids) >= 2:
+                sampled_cids = [available_cids[1]]
+            else:
+                sampled_cids = random.sample(available_cids, 1)
+                
         return [self.clients[cid] for cid in sampled_cids]
