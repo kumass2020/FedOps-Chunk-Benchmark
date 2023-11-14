@@ -1,6 +1,7 @@
 import subprocess
 import os
 import time
+import psutil
 
 # Function to create a cgroup with given CPU quota and period
 def create_cgroup(group_name, cpu_quota, cpu_period):
@@ -14,11 +15,20 @@ def start_process(command, group_name):
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
     # Wait a bit for the process to start up and register its PID
-    time.sleep(1)  # Sleep to allow the process to start
+    time.sleep(0.5)  # Sleep to allow the process to start
 
-    # Apply the cgroup classification to the process
-    subprocess.run(['sudo', 'cgclassify', '-g', 'cpu:/' + group_name, str(process.pid)], check=True)
+    # Use psutil to wait for child processes to be created
+    parent = psutil.Process(process.pid)
+    children = parent.children(recursive=True)
+    while not children:
+        time.sleep(0.1)
+        children = parent.children(recursive=True)
     
+    # Apply the cgroup classification to the child process
+    for child in children:
+        subprocess.run(['sudo', 'cgclassify', '-g', 'cpu:/' + group_name, str(child.pid)], check=True)
+        print('command:', 'sudo', 'cgclassify', '-g', 'cpu:/' + group_name, str(child.pid))
+
     return process
 
 # Function to terminate all running processes
@@ -41,7 +51,7 @@ try:
 
     # Create a cgroup for each CPU limit and start the processes
     for i, cores in enumerate(core_allocations):
-        cpu_quota = int((cores / 1000 / total_cores) * cpu_period * total_cores)  # Calculate the quota
+        cpu_quota = int((cores * 0.5 / 1000 / total_cores) * cpu_period * total_cores)  # Calculate the quota
         group_name_with_cid = f"{group_name}_cid_{i}"
         create_cgroup(group_name_with_cid, cpu_quota, cpu_period)
 

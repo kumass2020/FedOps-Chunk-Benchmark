@@ -211,7 +211,7 @@ class Server:
             log(INFO, str(self.drop_client_count) + " clients dropped.")
     
     def drop_client(self, client_instructions):
-        client_select = False
+        client_select = True
         if client_select:
             count = 0
             ci_copy = client_instructions.copy()
@@ -301,7 +301,7 @@ class Server:
         )
 
         #############
-        if server_round == 2:
+        if server_round >= 2:
         #     # self.drop_cid_list.append((client_instructions[0])[0].cid)
             self.select_client(server_round)
         client_instructions = self.drop_client(client_instructions)
