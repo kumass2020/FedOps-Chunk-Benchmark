@@ -171,7 +171,10 @@ class Server:
                 execution_time_list.append(li[1])
             median_execution_time = statistics.median(execution_time_list)
             mad_execution_time = statistics.median([abs(x - median_execution_time) for x in execution_time_list])
+            
+            ##############
             threshold = 3
+            ##############
 
             adaptive_threshold = median_execution_time + threshold * mad_execution_time
             log(INFO, "adaptive threshold:" + '{:.4f}'.format(adaptive_threshold))
@@ -301,7 +304,8 @@ class Server:
         )
 
         #############
-        if server_round >= 2:
+        # if 2 <= server_round <= 3:
+        if server_round == 2:
         #     # self.drop_cid_list.append((client_instructions[0])[0].cid)
             self.select_client(server_round)
         client_instructions = self.drop_client(client_instructions)

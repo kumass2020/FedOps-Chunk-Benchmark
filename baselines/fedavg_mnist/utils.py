@@ -15,6 +15,8 @@ from torch.utils.data import DataLoader
 
 from flwr_baselines.publications.fedavg_mnist import model
 
+import wandb
+
 
 def plot_metric_from_history(
     hist: History,
@@ -91,6 +93,7 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     examples = [num_examples for num_examples, _ in metrics]
 
     # Aggregate and return custom metric (weighted average)
+    wandb.log({"clients_weighted_average_accuracy": int(sum(accuracies)) / int(sum(examples))})
     return {"accuracy": int(sum(accuracies)) / int(sum(examples))}
 
 
@@ -128,6 +131,7 @@ def gen_evaluate_fn(
 
         loss, accuracy = model.test(net, testloader, device=device)
         # return statistics
+        wandb.log({"centralized_loss": loss, "centralized_accuracy": accuracy})
         return loss, {"accuracy": accuracy}
 
     return evaluate

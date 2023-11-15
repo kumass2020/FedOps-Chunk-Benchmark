@@ -47,11 +47,13 @@ try:
     processes = []
 
     # Define your CPU core allocations (as a fraction of total cores)
-    core_allocations = [548, 318, 471, 854, 1000, 1000, 854, 471, 1000, 1000, 471, 1000, 816, 471, 777, 1000, 816, 854, 1000, 854, 586, 1000, 1000, 624, 701, 1000, 586, 1000, 1000, 624, 1000, 586, 1000, 624, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 777, 1000, 1000, 624, 1000, 1000, 1000, 1000, 1000]
+    # core_allocations = [548, 318, 471, 854, 1000, 1000, 854, 471, 1000, 1000, 471, 1000, 816, 471, 777, 1000, 816, 854, 1000, 854, 586, 1000, 1000, 624, 701, 1000, 586, 1000, 1000, 624, 1000, 586, 1000, 624, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 777, 1000, 1000, 624, 1000, 1000, 1000, 1000, 1000]
+    # core_allocations = [3721, 930, 2230, 2804, 3760, 1274, 1542, 586, 586, 624, 1427, 1580, 1618, 1657, 3492, 1657, 586, 586, 624, 1542, 510, 892, 2268, 624, 1618, 548, 2192, 892, 1198, 2230, 2230, 892, 1733, 624, 471, 624, 854, 816, 1121, 1465, 1007, 1274, 777, 1580, 548, 2115, 1618, 1580, 1771, 892]
+    core_allocations = [1580, 357, 892, 2804, 854, 624, 854, 3454, 892, 1580, 1045, 1542, 1274, 510, 892, 1236, 1618, 1618, 1313, 1771, 586, 1618, 1657, 739, 1504]
 
     # Create a cgroup for each CPU limit and start the processes
     for i, cores in enumerate(core_allocations):
-        cpu_quota = int((cores * 0.5 / 1000 / total_cores) * cpu_period * total_cores)  # Calculate the quota
+        cpu_quota = int((cores * 0.7 / 1000 / total_cores) * cpu_period * total_cores)  # Calculate the quota
         group_name_with_cid = f"{group_name}_cid_{i}"
         create_cgroup(group_name_with_cid, cpu_quota, cpu_period)
 
@@ -61,6 +63,9 @@ try:
         processes.append(process)  # Keep track of the started processes
 
         print(f"Started process with command '{cmd}' within cgroup '{group_name_with_cid}' with quota {cpu_quota}us and period {cpu_period}us")
+
+        # if i == 24:
+        #     break
 
     # Monitor the processes
     for process in processes:

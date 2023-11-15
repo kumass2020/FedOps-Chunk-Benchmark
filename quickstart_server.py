@@ -12,20 +12,22 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     examples = [num_examples for num_examples, _ in metrics]
 
     # Aggregate and return custom metric (weighted average)
+    wandb.log({"accuracy": sum(accuracies) / sum(examples)})
     return {"accuracy": sum(accuracies) / sum(examples)}
 
 
 # Define strategy
 strategy = fl.server.strategy.FedAvg(
     evaluate_metrics_aggregation_fn=weighted_average,
-    min_fit_clients=50,
-    min_evaluate_clients=50,
-    min_available_clients=50,
+    min_fit_clients=25,
+    min_evaluate_clients=25,
+    min_available_clients=25,
 )
+
+wandb.login()
 
 # start a new wandb run to track this script
 wandb.init(
-    entity="hoho",
     # set the wandb project where this run will be logged
     project="fedops-baselines-fedavg",
 )
@@ -33,8 +35,10 @@ wandb.init(
 # Start Flower server
 fl.server.start_server(
     server_address="0.0.0.0:8080",
-    config=fl.server.ServerConfig(num_rounds=20),
+    config=fl.server.ServerConfig(num_rounds=1000),
     strategy=strategy,
 )
 
 wandb.finish()
+
+print("Done.")

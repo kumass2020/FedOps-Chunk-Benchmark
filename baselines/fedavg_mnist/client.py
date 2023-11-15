@@ -152,8 +152,8 @@ def main() -> None:
     client_fn, testloader = gen_client_fn(
         device=DEVICE,
         iid=False,
-        balance=False,
-        num_clients=50,
+        balance=True,
+        num_clients=25,
         num_epochs=5,
         batch_size=10,
         learning_rate=0.1,
