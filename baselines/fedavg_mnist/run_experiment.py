@@ -2,8 +2,9 @@ import subprocess
 import os
 import time
 import psutil
+import datetime
 
-# Function to create a cgroup with given CPU quota and period
+
 def create_cgroup(group_name, cpu_quota, cpu_period):
     subprocess.run(['sudo', 'cgcreate', '-g', 'cpu:/' + group_name], check=True)
     subprocess.run(['sudo', 'cgset', '-r', f'cpu.cfs_quota_us={cpu_quota}', group_name], check=True)
@@ -29,6 +30,15 @@ def start_process(command, group_name):
         subprocess.run(['sudo', 'cgclassify', '-g', 'cpu:/' + group_name, str(child.pid)], check=True)
         print('command:', 'sudo', 'cgclassify', '-g', 'cpu:/' + group_name, str(child.pid))
 
+        # Store the logs of client.py in the specified directory
+        now = datetime.datetime.now().strftime("%y%m%d_%H:%M:%S")
+        log_dir = f"./logs/{now}"
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = f"{log_dir}/{group_name}.log"
+        with open(log_file, "w") as f:
+            f.write(child.communicate()[0].decode())
+        print('command:', 'sudo', 'cgclassify', '-g', 'cpu:/' + group_name, str(child.pid))
+
     return process
 
 # Function to terminate all running processes
@@ -51,6 +61,10 @@ try:
     # core_allocations = [3721, 930, 2230, 2804, 3760, 1274, 1542, 586, 586, 624, 1427, 1580, 1618, 1657, 3492, 1657, 586, 586, 624, 1542, 510, 892, 2268, 624, 1618, 548, 2192, 892, 1198, 2230, 2230, 892, 1733, 624, 471, 624, 854, 816, 1121, 1465, 1007, 1274, 777, 1580, 548, 2115, 1618, 1580, 1771, 892]
     core_allocations = [1580, 357, 892, 2804, 854, 624, 854, 3454, 892, 1580, 1045, 1542, 1274, 510, 892, 1236, 1618, 1618, 1313, 1771, 586, 1618, 1657, 739, 1504]
 
+    # Test
+    core_allocations = [357, 892, 2804, 854, 624, 854, 3454, 892, 1580, 1045, 1542, 1274, 510, 892, 1236, 1618, 1618, 1313, 1771, 586, 1618, 1657, 739, 1504]
+
+
     # Create a cgroup for each CPU limit and start the processes
     for i, cores in enumerate(core_allocations):
         cpu_quota = int((cores * 0.7 / 1000 / total_cores) * cpu_period * total_cores)  # Calculate the quota
@@ -58,7 +72,7 @@ try:
         create_cgroup(group_name_with_cid, cpu_quota, cpu_period)
 
         # Start the process within the cgroup
-        cmd = f"python client.py --cid {i}"
+        cmd = f"python /home/hoho/github/FedOps-Chunk-Benchmark/baselines/fedavg_mnist/client.py --cid {i}"
         process = start_process(cmd, group_name_with_cid)
         processes.append(process)  # Keep track of the started processes
 

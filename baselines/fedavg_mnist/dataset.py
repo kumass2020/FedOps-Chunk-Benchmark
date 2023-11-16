@@ -17,6 +17,8 @@ def load_datasets(  # pylint: disable=too-many-arguments
     val_ratio: float = 0.1,
     batch_size: Optional[int] = 32,
     seed: Optional[int] = 42,
+    cid: Optional[int] = 0,
+    is_client: Optional[bool] = False,
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
     """Creates the dataloaders to be fed into the model.
 
@@ -44,7 +46,7 @@ def load_datasets(  # pylint: disable=too-many-arguments
     Tuple[DataLoader, DataLoader, DataLoader]
         The DataLoader for training, the DataLoader for validation, the DataLoader for testing.
     """
-    datasets, testset = _partition_data(num_clients, iid, balance, seed)
+    datasets, testset = _partition_data(num_clients, iid, balance, seed, cid, is_client)
     # Split each partition into train/val and create DataLoader
     trainloaders = []
     valloaders = []
@@ -80,6 +82,8 @@ def _partition_data(
     iid: Optional[bool] = True,
     balance: Optional[bool] = True,
     seed: Optional[int] = 42,
+    cid: Optional[int] = 0,
+    is_client: Optional[bool] = False,
 ) -> Tuple[List[Dataset], Dataset]:
     """Split training set into iid or non iid partitions to simulate the
     federated setting.

@@ -126,7 +126,7 @@ def main():
             "threshold": 3,
 
             "client_version": "v2",
-            "epochs": 10,
+            "epochs": 5,
             "batch_size": 10,
             "learning_rate": 0.1,
             "momentum": 0.0,

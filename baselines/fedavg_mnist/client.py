@@ -10,8 +10,8 @@ import torch
 from flwr.common.typing import NDArrays, Scalar
 from torch.utils.data import DataLoader
 
-from flwr_baselines.publications.fedavg_mnist import model
-from flwr_baselines.publications.fedavg_mnist.dataset import load_datasets
+import model
+from dataset import load_datasets
 
 import argparse
 
@@ -123,7 +123,7 @@ def gen_client_fn(
         trainloader = trainloaders[int(cid)]
         valloader = valloaders[int(cid)]
 
-        # Create a  single Flower client representing a single organization
+        # Create a single Flower client representing a single organization
         return FlowerClient(
             net, trainloader, valloader, device, num_epochs, learning_rate
         )
@@ -137,8 +137,8 @@ def main() -> None:
     parser.add_argument(
         "--cid",
         type=int,
-        default=0,
-        choices=range(0, 50),
+        default=24,
+        choices=range(0, 25),
         required=False,
     )
 

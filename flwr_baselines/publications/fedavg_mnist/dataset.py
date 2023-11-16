@@ -80,6 +80,7 @@ def _partition_data(
     iid: Optional[bool] = True,
     balance: Optional[bool] = True,
     seed: Optional[int] = 42,
+    cid: Optional[int] = 0,
 ) -> Tuple[List[Dataset], Dataset]:
     """Split training set into iid or non iid partitions to simulate the
     federated setting.
