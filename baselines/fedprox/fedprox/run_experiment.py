@@ -68,7 +68,7 @@ try:
         group_name_with_cid = f"{group_name}_cid_{i}"
         create_cgroup(group_name_with_cid, cpu_quota, cpu_period)
 
-        cmd = f"python /home/hoho/github/FedOps-Chunk-Benchmark/baselines/fedavg_mnist/client.py --cid {i}"
+        cmd = f"python -m /home/hoho/github/FedOps-Chunk-Benchmark/baselines/fedprox/fedprox/client.py cid={i}"
         log_file = f"{log_dir}/client_{i}.log"
         process, log_file_path = start_process(cmd, group_name_with_cid, log_file)
         processes.append((process, log_file_path))

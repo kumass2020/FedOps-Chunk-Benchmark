@@ -145,7 +145,7 @@ def _balance_classes(
     class that contained the least elements.
 
     Parameters
-    ----------
+    ----------  
     trainset : Dataset
         The training dataset that needs to be balanced.
     seed : int, optional

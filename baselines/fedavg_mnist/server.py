@@ -10,7 +10,7 @@ import torch
 
 import sys
 sys.path.append('../../baselines')
-
+sys.path.append('./baselines')
 from fedavg_mnist import utils
 import warnings
 import wandb
@@ -104,7 +104,7 @@ def main():
         evaluate_fn=evaluate_fn,
         on_fit_config_fn=fit_config,
         on_evaluate_config_fn=evaluate_config,
-        initial_parameters=fl.common.ndarrays_to_parameters(model_parameters),
+        # initial_parameters=fl.common.ndarrays_to_parameters(model_parameters),
         evaluate_metrics_aggregation_fn=utils.weighted_average,
     )
 

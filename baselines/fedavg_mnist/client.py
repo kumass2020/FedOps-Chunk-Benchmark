@@ -76,6 +76,7 @@ def gen_client_fn(
     num_epochs: int,
     batch_size: int,
     learning_rate: float,
+    cid: int,
 ) -> Tuple[Callable[[str], FlowerClient], DataLoader]:
     """Generates the client function that creates the Flower Clients.
 
@@ -111,7 +112,7 @@ def gen_client_fn(
         iid=iid, balance=balance, num_clients=num_clients, batch_size=batch_size
     )
 
-    def client_fn(cid: str) -> FlowerClient:
+    def client_fn() -> FlowerClient:
         """Create a Flower client representing a single organization."""
 
         # Load model
@@ -157,10 +158,11 @@ def main() -> None:
         num_epochs=5,
         batch_size=10,
         learning_rate=0.1,
+        cid=cid,
     )
 
     # Create an instance of FlowerClient using the client function
-    flower_client = client_fn(cid=cid)
+    flower_client = client_fn()
 
     # Start the Flower client
     fl.client.start_numpy_client(server_address="127.0.0.1:8080", client=flower_client)
