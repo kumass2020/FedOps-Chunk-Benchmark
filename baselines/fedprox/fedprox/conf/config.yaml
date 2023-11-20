@@ -38,4 +38,4 @@ strategy:
   evaluate_metrics_aggregation_fn:
     _target_: fedprox.strategy.weighted_average
     _partial_: true # we dont' want this function to be evaluated when instantiating the strategy, we treat it as a partial and evaluate it when the strategy actually calls the function (in aggregate_evaluate())
-  proximal_mu: ${mu
+  proximal_mu: ${mu}
