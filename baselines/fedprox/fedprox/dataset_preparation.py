@@ -258,9 +258,13 @@ def _power_law_split(
         / np.sum(probs, (1, 2), keepdims=True)
     )
 
+    _count = 0
     for u_id in range(num_partitions):
         for cls_idx in range(num_labels_per_partition):
             cls = (u_id + cls_idx) % num_classes
+
+            print(_count, probs.shape, cls, u_id // num_classes, cls_idx, num_partitions, num_labels_per_partition)
+            _count += 1
             count = int(probs[cls, u_id // num_classes, cls_idx])
 
             # add count of specific class to partition
