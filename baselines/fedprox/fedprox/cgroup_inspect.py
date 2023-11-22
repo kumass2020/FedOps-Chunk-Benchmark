@@ -21,7 +21,7 @@ def get_cgroup_procs(cgroup_name):
     return procs.splitlines()  # Returns a list of PIDs
 
 # Example usage
-cgroup_name = "fedops_cid_1"
+cgroup_name = "fedops_cid_0"
 cpu_limits = get_cgroup_cpu_limit(cgroup_name)
 cgroup_procs = get_cgroup_procs(cgroup_name)
 

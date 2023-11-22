@@ -15,6 +15,9 @@ from fedprox.models import test
 import hydra
 from fedprox.dataset import load_datasets
 import flwr as fl
+import wandb
+
+torch.set_num_threads(8)
 
 
 def gen_evaluate_fn(
@@ -106,6 +109,31 @@ def main(cfg: DictConfig):
         cfg.strategy,
         evaluate_fn=evaluate_fn,
         on_fit_config_fn=get_on_fit_config(),
+    )
+
+    wandb.init(
+        entity="hoho",
+        # set the wandb project where this run will be logged
+        project="fedops-baselines-fedprox",
+
+        # track hyperparameters and run metadata
+        config={
+            "architecture": "CNN",
+            "dataset": "MNIST",
+
+            "server_version": "v1",
+            "min_clients": 30,
+            "rounds": 1000,
+            "client_selection": "on",
+            "threshold": 3,
+
+            "client_version": "v1",
+            "epochs": 10,
+            "batch_size": 10,
+            "learning_rate": 0.03,
+            "mu": 1.0,
+            # "test": "True",
+        },
     )
 
     # Start Flower server for four rounds of federated learning

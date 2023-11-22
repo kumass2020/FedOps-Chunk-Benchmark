@@ -3,6 +3,7 @@ import os
 import time
 import psutil
 import datetime
+import threading
 
 
 def create_cgroup(group_name, cpu_quota, cpu_period):
@@ -15,22 +16,10 @@ def start_process(command, group_name, log_file):
     # Start the process and return the Popen object without waiting
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
-    # Wait a bit for the process to start up and register its PID
-    time.sleep(0.5)  # Sleep to allow the process to start
+    # Apply the cgroup classification to the process
+    subprocess.run(['sudo', 'cgclassify', '-g', 'cpu:/' + group_name, str(process.pid)], check=True)
+    print('command:', 'sudo', 'cgclassify', '-g', 'cpu:/' + group_name, str(process.pid))
 
-    # Use psutil to wait for child processes to be created
-    parent = psutil.Process(process.pid)
-    children = parent.children(recursive=True)
-    while not children:
-        time.sleep(0.1)
-        children = parent.children(recursive=True)
-    
-    # Apply the cgroup classification to the child process
-    for child in children:
-        subprocess.run(['sudo', 'cgclassify', '-g', 'cpu:/' + group_name, str(child.pid)], check=True)
-        print('command:', 'sudo', 'cgclassify', '-g', 'cpu:/' + group_name, str(child.pid))
-
-    # Return the original subprocess.Popen object, not the psutil.Process object
     return process, log_file
 
 
@@ -39,6 +28,31 @@ def terminate_processes(processes):
     for process in processes:
         process.terminate()  # Send SIGTERM to the process
         process.wait()  # Wait for the process to terminate
+
+
+def write_logs(process, log_file_path):
+    def write_stream(stream, log_file):
+        while True:
+            line = stream.readline()
+            if line:
+                log_file.write(line)
+                log_file.flush()
+            else:
+                break
+
+    try:
+        with open(log_file_path, 'w') as log_file:
+            stdout_thread = threading.Thread(target=write_stream, args=(process.stdout, log_file))
+            stderr_thread = threading.Thread(target=write_stream, args=(process.stderr, log_file))
+
+            stdout_thread.start()
+            stderr_thread.start()
+
+            stdout_thread.join()
+            stderr_thread.join()
+    except Exception as e:
+        print(f"Error writing logs: {e}")
+
 
 # Main logic
 try:
@@ -52,10 +66,11 @@ try:
     # Define your CPU core allocations (as a fraction of total cores)
     # core_allocations = [548, 318, 471, 854, 1000, 1000, 854, 471, 1000, 1000, 471, 1000, 816, 471, 777, 1000, 816, 854, 1000, 854, 586, 1000, 1000, 624, 701, 1000, 586, 1000, 1000, 624, 1000, 586, 1000, 624, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 777, 1000, 1000, 624, 1000, 1000, 1000, 1000, 1000]
     # core_allocations = [3721, 930, 2230, 2804, 3760, 1274, 1542, 586, 586, 624, 1427, 1580, 1618, 1657, 3492, 1657, 586, 586, 624, 1542, 510, 892, 2268, 624, 1618, 548, 2192, 892, 1198, 2230, 2230, 892, 1733, 624, 471, 624, 854, 816, 1121, 1465, 1007, 1274, 777, 1580, 548, 2115, 1618, 1580, 1771, 892]
-    core_allocations = [1580, 357, 892, 2804, 854, 624, 854, 3454, 892, 1580, 1045, 1542, 1274, 510, 892, 1236, 1618, 1618, 1313, 1771, 586, 1618, 1657, 739, 1504]
+    # core_allocations = [1580, 357, 892, 2804, 854, 624, 854, 3454, 892, 1580, 1045, 1542, 1274, 510, 892, 1236, 1618, 1618, 1313, 1771, 586, 1618, 1657, 739, 1504]
+    core_allocations = [930, 1542, 892, 1236, 968, 2727, 1580, 624, 1465, 1274, 1618, 1580, 3530, 777, 586, 1274, 892, 1045, 1542, 1504, 357, 1618, 624, 816, 1427, 2765, 2230, 968, 624, 854]
 
     # Test
-    core_allocations = [357, 892, 2804, 854, 624, 854, 3454, 892, 1580, 1045, 1542, 1274, 510, 892, 1236, 1618, 1618, 1313, 1771, 586, 1618, 1657, 739, 1504]
+    # core_allocations = [357, 892, 2804, 854, 624, 854, 3454, 892, 1580, 1045, 1542, 1274, 510, 892, 1236, 1618, 1618, 1313, 1771, 586, 1618, 1657, 739, 1504]
 
     # Create log directory outside the loop
     now = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
@@ -68,7 +83,7 @@ try:
         group_name_with_cid = f"{group_name}_cid_{i}"
         create_cgroup(group_name_with_cid, cpu_quota, cpu_period)
 
-        cmd = f"python -m /home/hoho/github/FedOps-Chunk-Benchmark/baselines/fedprox/fedprox/client.py cid={i}"
+        cmd = f"python -m fedprox.client cid={i}"
         log_file = f"{log_dir}/client_{i}.log"
         process, log_file_path = start_process(cmd, group_name_with_cid, log_file)
         processes.append((process, log_file_path))
@@ -78,12 +93,9 @@ try:
 
     # Monitor the processes and write logs
     for process, log_file in processes:
-        stdout, stderr = process.communicate()  # Wait for process to complete
-        with open(log_file, 'w') as log:
-            log.write(stdout.decode())
-            if stderr:
-                log.write("\n--- STDERR ---\n")
-                log.write(stderr.decode())
+        write_logs_thread = threading.Thread(target=write_logs, args=(process, log_file))
+        write_logs_thread.start()
+        write_logs_thread.join()
 
 except Exception as e:
     print(f"An error occurred: {e}")
