@@ -20,10 +20,11 @@ def get_cgroup_procs(cgroup_name):
     procs = subprocess.check_output(["cat", procs_path]).decode().strip()
     return procs.splitlines()  # Returns a list of PIDs
 
-# Example usage
-cgroup_name = "fedops_cid_0"
-cpu_limits = get_cgroup_cpu_limit(cgroup_name)
-cgroup_procs = get_cgroup_procs(cgroup_name)
+# Loop through cgroup names from cid_0 to cid_29
+for i in range(30):
+    cgroup_name = f"fedops_cid_{i}"
+    cpu_limits = get_cgroup_cpu_limit(cgroup_name)
+    cgroup_procs = get_cgroup_procs(cgroup_name)
 
-print(f"CPU Limits for {cgroup_name}: {cpu_limits}")
-print(f"Processes in {cgroup_name}: {cgroup_procs}")
+    print(f"CPU Limits for {cgroup_name}: {cpu_limits}")
+    print(f"Processes in {cgroup_name}: {cgroup_procs}")

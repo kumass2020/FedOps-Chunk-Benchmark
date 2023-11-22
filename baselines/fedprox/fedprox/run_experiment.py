@@ -15,6 +15,23 @@ def create_cgroup(group_name, cpu_quota, cpu_period):
 def start_process(command, group_name, log_file):
     # Start the process and return the Popen object without waiting
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    time.sleep(0.2)
+
+    # Use psutil to wait for child processes to be created
+    parent = psutil.Process(process.pid)
+    children = parent.children(recursive=True)
+    count = 0
+    while not children and count < 3:
+        time.sleep(0.1)
+        children = parent.children(recursive=True)
+        count += 1
+    
+    # Apply the cgroup classification to the child process
+    if children:
+        for child in children:
+            subprocess.run(['sudo', 'cgclassify', '-g', 'cpu:/' + group_name, str(child.pid)], check=True)
+            print('command:', 'sudo', 'cgclassify', '-g', 'cpu:/' + group_name, str(child.pid))
     
     # Apply the cgroup classification to the process
     subprocess.run(['sudo', 'cgclassify', '-g', 'cpu:/' + group_name, str(process.pid)], check=True)
@@ -32,13 +49,9 @@ def terminate_processes(processes):
 
 def write_logs(process, log_file_path):
     def write_stream(stream, log_file):
-        while True:
-            line = stream.readline()
-            if line:
-                log_file.write(line)
-                log_file.flush()
-            else:
-                break
+        for line in iter(stream.readline, b''):  # Read until an empty byte is found
+            log_file.write(line.decode())  # Decode from bytes to str before writing
+            log_file.flush()
 
     try:
         with open(log_file_path, 'w') as log_file:
@@ -54,6 +67,7 @@ def write_logs(process, log_file_path):
         print(f"Error writing logs: {e}")
 
 
+
 # Main logic
 try:
     group_name = "fedops"
@@ -67,7 +81,12 @@ try:
     # core_allocations = [548, 318, 471, 854, 1000, 1000, 854, 471, 1000, 1000, 471, 1000, 816, 471, 777, 1000, 816, 854, 1000, 854, 586, 1000, 1000, 624, 701, 1000, 586, 1000, 1000, 624, 1000, 586, 1000, 624, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 777, 1000, 1000, 624, 1000, 1000, 1000, 1000, 1000]
     # core_allocations = [3721, 930, 2230, 2804, 3760, 1274, 1542, 586, 586, 624, 1427, 1580, 1618, 1657, 3492, 1657, 586, 586, 624, 1542, 510, 892, 2268, 624, 1618, 548, 2192, 892, 1198, 2230, 2230, 892, 1733, 624, 471, 624, 854, 816, 1121, 1465, 1007, 1274, 777, 1580, 548, 2115, 1618, 1580, 1771, 892]
     # core_allocations = [1580, 357, 892, 2804, 854, 624, 854, 3454, 892, 1580, 1045, 1542, 1274, 510, 892, 1236, 1618, 1618, 1313, 1771, 586, 1618, 1657, 739, 1504]
+
+    # 30 clients
     core_allocations = [930, 1542, 892, 1236, 968, 2727, 1580, 624, 1465, 1274, 1618, 1580, 3530, 777, 586, 1274, 892, 1045, 1542, 1504, 357, 1618, 624, 816, 1427, 2765, 2230, 968, 624, 854]
+
+    # 20 clients
+    # core_allocations = [1389, 1045, 1733, 1618, 1274, 739, 471, 854, 968, 624, 510, 357, 1121, 3492, 1121, 892, 1236, 1313, 1504, 854]
 
     # Test
     # core_allocations = [357, 892, 2804, 854, 624, 854, 3454, 892, 1580, 1045, 1542, 1274, 510, 892, 1236, 1618, 1618, 1313, 1771, 586, 1618, 1657, 739, 1504]
@@ -79,7 +98,7 @@ try:
 
     # Create a cgroup for each CPU limit and start the processes
     for i, cores in enumerate(core_allocations):
-        cpu_quota = int((cores * 0.7 / 1000 / total_cores) * cpu_period * total_cores)
+        cpu_quota = int((cores / 1000 / total_cores) * cpu_period * total_cores)
         group_name_with_cid = f"{group_name}_cid_{i}"
         create_cgroup(group_name_with_cid, cpu_quota, cpu_period)
 

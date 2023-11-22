@@ -60,6 +60,7 @@ def gen_evaluate_fn(
         # dataset used in this baseline. In general, compiling the model is worth it
 
         loss, accuracy = test(net, testloader, device=device)
+        wandb.log({"centralized_loss": loss, "centralized_accuracy": accuracy, "server_round": server_round})
         # return statistics
         return loss, {"accuracy": accuracy}
 
@@ -125,7 +126,7 @@ def main(cfg: DictConfig):
             "min_clients": 30,
             "rounds": 1000,
             "client_selection": "on",
-            "threshold": 3,
+            "threshold": 7,
 
             "client_version": "v1",
             "epochs": 10,

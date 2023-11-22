@@ -180,6 +180,8 @@ def gen_client_fn(
 
 @hydra.main(config_path="conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
+    torch.set_num_threads(2)
+    
     # parser = argparse.ArgumentParser(description="Flower")
 
     # parser.add_argument(

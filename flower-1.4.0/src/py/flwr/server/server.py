@@ -173,7 +173,7 @@ class Server:
             mad_execution_time = statistics.median([abs(x - median_execution_time) for x in execution_time_list])
             
             ##############
-            threshold = 3
+            threshold = 7
             ##############
 
             adaptive_threshold = median_execution_time + threshold * mad_execution_time
