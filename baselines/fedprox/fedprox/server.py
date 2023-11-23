@@ -16,8 +16,11 @@ import hydra
 from fedprox.dataset import load_datasets
 import flwr as fl
 import wandb
+from wandb import AlertLevel
 
 torch.set_num_threads(8)
+
+alerted = False
 
 
 def gen_evaluate_fn(
@@ -43,10 +46,14 @@ def gen_evaluate_fn(
         The centralized evaluation function.
     """
 
+    global alerted  # Declare 'alerted' as global
+
     def evaluate(
         server_round: int, parameters_ndarrays: NDArrays, config: Dict[str, Scalar]
     ) -> Optional[Tuple[float, Dict[str, Scalar]]]:
         # pylint: disable=unused-argument
+        global alerted  # Declare 'alerted' as global inside this function as well
+
         """Use the entire CIFAR-10 test set for evaluation."""
         net = instantiate(model)
         params_dict = zip(net.state_dict().keys(), parameters_ndarrays)
@@ -61,6 +68,19 @@ def gen_evaluate_fn(
 
         loss, accuracy = test(net, testloader, device=device)
         wandb.log({"centralized_loss": loss, "centralized_accuracy": accuracy, "server_round": server_round})
+        if accuracy > 0.8 and not alerted:
+            wandb.alert(
+                title="Centralized Accuracy Alert",
+                text=f"Centralized Accuracy is above 0.8 at round {server_round}",
+                level=AlertLevel.INFO,
+            )
+            alerted = True
+        if server_round == 500:
+            wandb.alert(
+                title="Round Alert",
+                text=f"Round is at 500",
+                level=AlertLevel.INFO,
+            )
         # return statistics
         return loss, {"accuracy": accuracy}
 
@@ -126,7 +146,7 @@ def main(cfg: DictConfig):
             "min_clients": 30,
             "rounds": 1000,
             "client_selection": "on",
-            "threshold": 7,
+            "threshold": 3,
 
             "client_version": "v1",
             "epochs": 10,
