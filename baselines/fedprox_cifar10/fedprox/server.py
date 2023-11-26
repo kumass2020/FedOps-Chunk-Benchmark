@@ -135,18 +135,18 @@ def main(cfg: DictConfig):
     wandb.init(
         entity="hoho",
         # set the wandb project where this run will be logged
-        project="fedops-baselines-fedprox",
+        project="fedops-baselines-fedprox-cifar10",
 
         # track hyperparameters and run metadata
         config={
             "architecture": "CNN",
-            "dataset": "MNIST",
+            "dataset": "CIFAR-10",
 
             "server_version": "v1",
             "min_clients": 30,
             "rounds": 1000,
             "client_selection": "on",
-            "threshold": 5,
+            "threshold": 3,
 
             "client_version": "v1",
             "epochs": 10,
