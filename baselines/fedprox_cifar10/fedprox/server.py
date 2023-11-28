@@ -18,6 +18,9 @@ import flwr as fl
 import wandb
 from wandb import AlertLevel
 
+from torch.utils.data import DataLoader
+from fedprox.dataset_preparation import load_data
+
 torch.set_num_threads(8)
 
 alerted = False
@@ -99,12 +102,21 @@ def main(cfg: DictConfig):
     # print config structured as YAML
     print(OmegaConf.to_yaml(cfg))
 
-    # partition dataset and get dataloaders
-    trainloaders, valloaders, testloader = load_datasets(
-        config=cfg.dataset_config,
-        num_clients=cfg.num_clients,
-        batch_size=cfg.batch_size,
-    )
+    # Load data and model here to avoid the overhead of doing it in `evaluate` itself
+    trainset, _, _ = load_data()
+
+    n_train = len(trainset)
+    # Use the last 5k training examples as a validation set
+    valset = torch.utils.data.Subset(trainset, range(n_train - 5000, n_train))
+
+    testloader = DataLoader(valset, batch_size=16)
+
+    # # partition dataset and get dataloaders
+    # trainloaders, valloaders, testloader = load_datasets(
+    #     config=cfg.dataset_config,
+    #     num_clients=cfg.num_clients,
+    #     batch_size=16,
+    # )
 
     # get function that will executed by the strategy's evaluate() method
     # Set server's device
@@ -143,15 +155,15 @@ def main(cfg: DictConfig):
             "dataset": "CIFAR-10",
 
             "server_version": "v1",
-            "min_clients": 30,
-            "rounds": 1000,
-            "client_selection": "on",
-            "threshold": 3,
+            "min_clients": cfg.clients_per_round,
+            "rounds": cfg.num_rounds,
+            "client_selection": cfg.client_selection,
+            "threshold": cfg.threshold,
 
             "client_version": "v1",
-            "epochs": 10,
-            "batch_size": 10,
-            "learning_rate": 0.03,
+            "epochs": cfg.num_epochs,
+            "batch_size": cfg.batch_size,
+            "learning_rate": cfg.learning_rate,
             "mu": 1.0,
             # "test": "True",
         },

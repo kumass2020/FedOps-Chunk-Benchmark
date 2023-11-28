@@ -30,7 +30,7 @@ def load_partition(num_clients: int, idx: int):
     n_test = int(num_examples["testset"] / num_clients)
 
     train_partitions = [torch.utils.data.Subset(
-        trainset, range(i * n_train, (i + 1) * n_train)
+        trainset, range(idx * n_train, (idx + 1) * n_train)
     ) for i in range(num_clients)]
     test_partition = torch.utils.data.Subset(
         testset, range(idx * n_test, (idx + 1) * n_test)

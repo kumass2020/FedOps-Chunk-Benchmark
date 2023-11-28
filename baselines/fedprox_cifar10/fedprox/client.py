@@ -162,6 +162,7 @@ def gen_client_fn(
 
         # Note: each client gets a different trainloader/valloader, so each client
         # will train and evaluate on their own unique data
+        print(cid)
         trainloader = trainloaders[int(cid)]
         valloader = valloaders[int(cid)]
 
@@ -204,6 +205,7 @@ def main(cfg: DictConfig) -> None:
         config=cfg.dataset_config,
         num_clients=cfg.num_clients,
         batch_size=cfg.batch_size,
+        cid=cid,
     )
 
     # Generate the client function and testloader using the gen_client_fn

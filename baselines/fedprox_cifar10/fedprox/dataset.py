@@ -50,11 +50,18 @@ def load_datasets(  # pylint: disable=too-many-arguments
     trainloaders = []
     valloaders = []
     for dataset in datasets:
+        # len_val = int(len(dataset) / (1 / val_ratio))
+        # lengths = [len(dataset) - len_val, len_val]
+        # ds_train, ds_val = random_split(
+        #     dataset, lengths, torch.Generator().manual_seed(seed)
+        # )
         len_val = int(len(dataset) / (1 / val_ratio))
-        lengths = [len(dataset) - len_val, len_val]
-        ds_train, ds_val = random_split(
-            dataset, lengths, torch.Generator().manual_seed(seed)
+
+        ds_val = torch.utils.data.Subset(dataset, range(0, len_val))
+        ds_train = torch.utils.data.Subset(
+            dataset, range(len_val, len(dataset))
         )
+
         trainloaders.append(DataLoader(ds_train, batch_size=batch_size, shuffle=True))
         valloaders.append(DataLoader(ds_val, batch_size=batch_size))
     return trainloaders, valloaders, DataLoader(testset, batch_size=batch_size)

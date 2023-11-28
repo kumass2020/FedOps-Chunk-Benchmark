@@ -21,18 +21,18 @@ class Net(nn.Module):
 
     def __init__(self, num_classes: int) -> None:
         super(Net, self).__init__()
-        # self.conv1 = nn.Conv2d(3, 6, 5)
-        # self.pool = nn.MaxPool2d(2, 2)
-        # self.conv2 = nn.Conv2d(6, 16, 5)
-        # self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        # self.fc2 = nn.Linear(120, 84)
-        # self.fc3 = nn.Linear(84, 10)
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
 
-        self.conv1 = nn.Conv2d(3, 32, 5, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, 5, padding=1)
-        self.pool = nn.MaxPool2d(kernel_size=(2, 2), padding=1)
-        self.fc1 = nn.Linear(64 * 8 * 8, 512)
-        self.fc2 = nn.Linear(512, num_classes)
+        # self.conv1 = nn.Conv2d(3, 32, 5, padding=1)
+        # self.conv2 = nn.Conv2d(32, 64, 5, padding=1)
+        # self.pool = nn.MaxPool2d(kernel_size=(2, 2), padding=1)
+        # self.fc1 = nn.Linear(64 * 8 * 8, 512)
+        # self.fc2 = nn.Linear(512, num_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the CNN.
@@ -47,21 +47,21 @@ class Net(nn.Module):
         torch.Tensor
             The resulting Tensor after it has passed through the network
         """
-        # x = self.pool(F.relu(self.conv1(x)))
-        # x = self.pool(F.relu(self.conv2(x)))
-        # x = x.view(-1, 16 * 5 * 5)
-        # x = F.relu(self.fc1(x))
-        # x = F.relu(self.fc2(x))
-        # return self.fc3(x)
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 16 * 5 * 5)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        return self.fc3(x)
 
-        output_tensor = F.relu(self.conv1(x))
-        output_tensor = self.pool(output_tensor)
-        output_tensor = F.relu(self.conv2(output_tensor))
-        output_tensor = self.pool(output_tensor)
-        output_tensor = torch.flatten(output_tensor, 1)
-        output_tensor = F.relu(self.fc1(output_tensor))
-        output_tensor = self.fc2(output_tensor)
-        return output_tensor
+        # output_tensor = F.relu(self.conv1(x))
+        # output_tensor = self.pool(output_tensor)
+        # output_tensor = F.relu(self.conv2(output_tensor))
+        # output_tensor = self.pool(output_tensor)
+        # output_tensor = torch.flatten(output_tensor, 1)
+        # output_tensor = F.relu(self.fc1(output_tensor))
+        # output_tensor = self.fc2(output_tensor)
+        # return output_tensor
 
 
 class LogisticRegression(nn.Module):
@@ -121,7 +121,7 @@ def train(  # pylint: disable=too-many-arguments
         Parameter for the weight of the proximal term.
     """
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.001)
+    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, weight_decay=0.001)
     global_params = [val.detach().clone() for val in net.parameters()]
     net.train()
     for _ in range(epochs):
