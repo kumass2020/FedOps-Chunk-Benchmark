@@ -1,0 +1,3 @@
+LDFLAGS="-Wl,-rpath,/home/hoho/anaconda3/bin/openssl/lib" \
+CONFIGURE_OPTS="-with-openssl=/home/hoho/anaconda3/bin/openssl" \
+pyenv install -v <python version>

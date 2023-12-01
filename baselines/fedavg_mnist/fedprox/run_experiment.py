@@ -99,7 +99,7 @@ try:
 
     # Create a cgroup for each CPU limit and start the processes
     for i, cores in enumerate(core_allocations):
-        cpu_quota = int((cores / 1000 / total_cores) * cpu_period * total_cores * 0.9)
+        cpu_quota = int((cores / 1000 / total_cores) * cpu_period * total_cores)
         group_name_with_cid = f"{group_name}_cid_{i}"
         create_cgroup(group_name_with_cid, cpu_quota, cpu_period)
 

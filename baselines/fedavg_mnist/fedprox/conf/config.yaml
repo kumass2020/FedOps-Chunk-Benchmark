@@ -2,15 +2,15 @@
 
 num_clients: 30 # total number of clients
 num_epochs: 10 # number of local epochs
-batch_size: 64
+batch_size: 10
 num_rounds: 1000
 clients_per_round: 30
 stragglers_fraction: 0.0
-initial_learning_rate: 0.003
-learning_rate: 0.003
-client_selection: "on"
-threshold: 4.5
-mu: 1.0 # it can be >= 0
+initial_learning_rate: 0.03
+learning_rate: 0.03
+client_selection: "off"
+threshold: 9999
+mu: 0.0 # it can be >= 0
 cid: 0 # client id
 core_num: 2 # number of cores
 
@@ -29,7 +29,7 @@ fit_config:
   drop_client: false # with FedProx, clients shouldn't be dropped even if they are stragglers
 
 model:
-  _target_: fedprox.models.Net
+  _target_: fedprox.models.LogisticRegression
   num_classes: 10
 
 strategy:

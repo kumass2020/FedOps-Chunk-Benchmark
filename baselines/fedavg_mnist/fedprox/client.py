@@ -33,7 +33,6 @@ class FlowerClient(
         valloader: DataLoader,
         device: torch.device,
         num_epochs: int,
-        initial_learning_rate: float,
         learning_rate: float,
         straggler_schedule: np.ndarray,
     ):  # pylint: disable=too-many-arguments
@@ -42,7 +41,6 @@ class FlowerClient(
         self.valloader = valloader
         self.device = device
         self.num_epochs = num_epochs
-        self.initial_learning_rate = initial_learning_rate
         self.learning_rate = learning_rate
         self.straggler_schedule = straggler_schedule
 
@@ -94,7 +92,7 @@ class FlowerClient(
             self.trainloader,
             self.device,
             epochs=num_epochs,
-            learning_rate=self.learning_rate if int(config["curr_round"]) > 10 else self.initial_learning_rate,
+            learning_rate=self.learning_rate,
             proximal_mu=float(config["proximal_mu"]),
         )
 
@@ -115,7 +113,6 @@ def gen_client_fn(
     num_epochs: int,
     trainloaders: List[DataLoader],
     valloaders: List[DataLoader],
-    initial_learning_rate: float,
     learning_rate: float,
     stragglers: float,
     model: DictConfig,
@@ -160,12 +157,11 @@ def gen_client_fn(
     def client_fn(cid: str) -> FlowerClient:
         """Create a Flower client representing a single organization."""
         # Load model
-        device = torch.device("cpu")
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         net = instantiate(model).to(device)
 
         # Note: each client gets a different trainloader/valloader, so each client
         # will train and evaluate on their own unique data
-        print(cid)
         trainloader = trainloaders[int(cid)]
         valloader = valloaders[int(cid)]
 
@@ -175,7 +171,6 @@ def gen_client_fn(
             valloader,
             device,
             num_epochs,
-            initial_learning_rate,
             learning_rate,
             stragglers_mat[int(cid)],
         )
@@ -185,7 +180,7 @@ def gen_client_fn(
 
 @hydra.main(config_path="conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
-    torch.set_num_threads(cfg.core_num)
+    torch.set_num_threads(2)
     
     # parser = argparse.ArgumentParser(description="Flower")
 
@@ -202,14 +197,13 @@ def main(cfg: DictConfig) -> None:
     # cid = str(args.cid)
     cid = cfg.cid
 
-    DEVICE = torch.device("cpu")
+    DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # partition dataset and get dataloaders
     trainloaders, valloaders, testloader = load_datasets(
         config=cfg.dataset_config,
         num_clients=cfg.num_clients,
         batch_size=cfg.batch_size,
-        cid=cid,
     )
 
     # Generate the client function and testloader using the gen_client_fn
@@ -219,7 +213,6 @@ def main(cfg: DictConfig) -> None:
         trainloaders=trainloaders,
         valloaders=valloaders,
         num_rounds=cfg.num_rounds,
-        initial_learning_rate=cfg.initial_learning_rate,
         learning_rate=cfg.learning_rate,
         stragglers=cfg.stragglers_fraction,
         model=cfg.model,
